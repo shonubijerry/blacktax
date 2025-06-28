@@ -1,0 +1,24 @@
+{
+  "name": "cloudflare-workers-openapi",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "cf-typegen": "wrangler types --env-interface Env ./env.d.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-d1": "^6.10.1",
+    "@prisma/client": "^6.10.1",
+    "chanfana": "^2.6.3",
+    "hono": "^4.6.20",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.0",
+    "@types/service-worker-mock": "^2.0.4",
+    "prisma": "^6.10.1",
+    "wrangler": "^4.22.0"
+  }
+}

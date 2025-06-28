@@ -1,5 +1,6 @@
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
+import { cors } from 'hono/cors'
 import { CreateFamilyMember } from "./endpoints/family/create";
 import { GetFamilyMembers } from "./endpoints/family/list";
 import { GetFamilyMember } from "./endpoints/family/get";
@@ -7,9 +8,22 @@ import { UpdateFamilyMember } from "./endpoints/family/update";
 import { DeleteFamilyMember } from "./endpoints/family/delete";
 import { TransferMoney } from "./endpoints/transfer/do";
 import { GetTransfers } from "./endpoints/transfer/list";
+import { AppContext } from "./types";
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
+
+app.use(
+	'*',
+  cors({
+    origin: (origin: string, c: AppContext) => {
+      return origin.endsWith(c.env.CORS_ORIGIN)
+        ? origin
+        : undefined
+    },
+    allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
+  })
+)
 
 // Setup OpenAPI registry
 const openapi = fromHono(app, {

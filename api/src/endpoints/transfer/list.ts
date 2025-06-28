@@ -15,7 +15,7 @@ export class GetTransfers extends OpenAPIRoute {
           'SUCCESS',
           'FAILED',
           'REVERSED'
-        ])
+        ]).optional()
       })
     },
     responses: {

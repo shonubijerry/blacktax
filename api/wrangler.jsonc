@@ -10,6 +10,33 @@
 	"observability": {
 		"enabled": true
 	},
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "blacktax-dev-db",
+      "database_id": "278a51bc-9100-4a51-bc44-41ba0152f561",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "WRANGLER_ENVIRONMENT": "development"
+  },
+  "env": {
+    "production": {
+      "name": "database-production",
+      "vars": {
+        "WRANGLER_ENVIRONMENT": "production"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "blacktax-production-database",
+          "database_id": "fa1c2ef1-977f-4694-887b-e022dc0ab61f",
+          "migrations_dir": "migrations"
+        }
+      ],
+    }
+  },
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -27,7 +54,6 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	"vars": { "MY_VARIABLE": "production_value" },
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/

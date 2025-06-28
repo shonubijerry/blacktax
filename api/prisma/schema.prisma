@@ -1,6 +1,6 @@
 // prisma/schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   output          = "../src/generated/prisma"
   previewFeatures = ["driverAdapters"]
 }
@@ -11,19 +11,19 @@ datasource db {
 }
 
 model FamilyMember {
-  id             String    @id @default(cuid())
-  name           String
-  email          String    @unique
-  phone          String
-  accountNumber  String    @map("account_number")
-  bankCode       String    @map("bank_code")
-  bankName       String?   @map("bank_name")
-  balance        Float     @default(0)
-  paystackRecipientCode String? @map("paystack_recipient_code")
-  isActive       Boolean   @default(true) @map("is_active")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  
+  id                    String   @id @default(cuid())
+  name                  String
+  email                 String   @unique
+  phone                 String
+  accountNumber         String   @map("account_number")
+  bankCode              String   @map("bank_code")
+  bankName              String?  @map("bank_name")
+  balance               Float    @default(0)
+  paystackRecipientCode String?  @map("paystack_recipient_code")
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
   // Relations
   sentTransfers     TransferTransaction[] @relation("SenderTransfers")
   receivedTransfers TransferRecipient[]
@@ -32,41 +32,41 @@ model FamilyMember {
 }
 
 model TransferTransaction {
-  id              String    @id @default(cuid())
-  reference       String    @unique
-  senderId        String?   @map("sender_id")
-  totalAmount     Float     @map("total_amount")
-  currency        String    @default("NGN")
+  id              String         @id @default(cuid())
+  reference       String         @unique
+  senderId        String?        @map("sender_id")
+  totalAmount     Float          @map("total_amount")
+  currency        String         @default("NGN")
   status          TransferStatus @default(PENDING)
-  paystackBatchId String?   @map("paystack_batch_id")
-  callbackUrl     String?   @map("callback_url")
+  paystackBatchId String?        @map("paystack_batch_id")
+  callbackUrl     String?        @map("callback_url")
   description     String?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
   // Relations
-  sender          FamilyMember? @relation("SenderTransfers", fields: [senderId], references: [id])
-  recipients      TransferRecipient[]
+  sender     FamilyMember?       @relation("SenderTransfers", fields: [senderId], references: [id])
+  recipients TransferRecipient[]
 
   @@map("transfer_transactions")
 }
 
 model TransferRecipient {
-  id                    String    @id @default(cuid())
-  transferId            String    @map("transfer_id")
-  recipientId           String    @map("recipient_id")
-  amount                Float
-  status                TransferStatus @default(PENDING)
-  paystackTransferCode  String?   @map("paystack_transfer_code")
-  paystackReference     String?   @map("paystack_reference")
-  failureReason         String?   @map("failure_reason")
-  transferredAt         DateTime? @map("transferred_at")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  
+  id                   String         @id @default(cuid())
+  transferId           String         @map("transfer_id")
+  recipientId          String         @map("recipient_id")
+  amount               Float
+  status               TransferStatus @default(PENDING)
+  paystackTransferCode String?        @map("paystack_transfer_code")
+  paystackReference    String?        @map("paystack_reference")
+  failureReason        String?        @map("failure_reason")
+  transferredAt        DateTime?      @map("transferred_at")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
   // Relations
-  transfer              TransferTransaction @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  recipient             FamilyMember @relation(fields: [recipientId], references: [id])
+  transfer  TransferTransaction @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  recipient FamilyMember        @relation(fields: [recipientId], references: [id])
 
   @@unique([transferId, recipientId])
   @@map("transfer_recipients")

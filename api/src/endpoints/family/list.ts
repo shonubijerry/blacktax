@@ -8,7 +8,7 @@ export class GetFamilyMembers extends OpenAPIRoute {
     tags: ['Family Members'],
     summary: 'Get all active family members',
     request: {
-      params: paginationSchema
+      query: paginationSchema
     },
     responses: {
       '200': {
@@ -27,7 +27,8 @@ export class GetFamilyMembers extends OpenAPIRoute {
     },
   };
 
-  async handle(c: AppContext, data: any) {
+  async handle(c: AppContext) {
+    const data = await this.getValidatedData<typeof this.schema>()
     const prisma = getPrismaClient(c.env);
 
     try {

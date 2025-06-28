@@ -1,5 +1,5 @@
 import { PrismaD1 } from "@prisma/adapter-d1";
-import { PrismaClient } from "@prisma/client/edge";
+import { PrismaClient } from "@prisma/client";
 import { ZodType, ZodTypeDef } from "zod";
 
 export function generateReference(): string {
@@ -11,7 +11,7 @@ export function getPrismaClient(env: any) {
   return new PrismaClient({ adapter });
 }
 
-export const reqJson = <T extends ZodType<any, ZodTypeDef, any>>(
+export const reqJson = <T extends ZodType>(
   schema: T,
 ) => ({
   content: {

@@ -2,13 +2,14 @@ import { OpenAPIRoute } from "chanfana";
 import { AppContext, FamilyMemberCreateSchema, FamilyMemberResponseSchema } from "../../types";
 import { getPrismaClient, reqJson } from "../../helper";
 import { Context } from "hono";
+import { Prisma } from "../../generated/prisma";
 
 export class CreateFamilyMember extends OpenAPIRoute {
   schema = {
     tags: ['Family Members'],
     summary: 'Create a new family member',
     request: {
-      body: reqJson(FamilyMemberCreateSchema)
+      body: reqJson(FamilyMemberCreateSchema),
     },
     responses: {
       '201': {
@@ -21,11 +22,12 @@ export class CreateFamilyMember extends OpenAPIRoute {
     },
   };
 
-  async handle(c: AppContext, data: any) {
+  async handle(c: AppContext) {
+    const data = await this.getValidatedData<typeof this.schema>()
     const prisma = getPrismaClient(c.env);
-    
+
     try {
-      const memberData = data.body;
+      const memberData = data.body
 
       // Check if email already exists
       const existingMember = await prisma.familyMember.findUnique({
@@ -43,7 +45,7 @@ export class CreateFamilyMember extends OpenAPIRoute {
       }
 
       const familyMember = await prisma.familyMember.create({
-        data: memberData,
+        data: memberData as Prisma.FamilyMemberCreateInput,
       });
 
       return new Response(JSON.stringify({

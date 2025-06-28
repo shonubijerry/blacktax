@@ -6,7 +6,7 @@ import { GetFamilyMember } from "./endpoints/family/get";
 import { UpdateFamilyMember } from "./endpoints/family/update";
 import { DeleteFamilyMember } from "./endpoints/family/delete";
 import { TransferMoney } from "./endpoints/transfer/do";
-import { GetTransfers } from "./paystack/list";
+import { GetTransfers } from "./endpoints/transfer/list";
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();

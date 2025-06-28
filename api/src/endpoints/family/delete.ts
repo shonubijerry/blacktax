@@ -22,9 +22,10 @@ export class DeleteFamilyMember extends OpenAPIRoute {
     },
   };
 
-  async handle(c: AppContext, data: any) {
+  async handle(c: AppContext) {
+    const data = await this.getValidatedData<typeof this.schema>()
     const prisma = getPrismaClient(c.env);
-    
+
     try {
       const { id } = data.params;
 

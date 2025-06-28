@@ -1,15 +1,21 @@
 import { OpenAPIRoute } from "chanfana";
-import { AppContext, paginationSchema } from "../types";
+import { AppContext, paginationSchema } from "../../types";
 import { z } from 'zod';
-import { getPrismaClient } from "../helper";
+import { getPrismaClient } from "../../helper";
 
 export class GetTransfers extends OpenAPIRoute {
   schema = {
     tags: ['Transfers'],
     summary: 'Get transfer history',
     request: {
-      params: paginationSchema.omit({ search: true }).extend({
-        status: z.string()
+      query: paginationSchema.omit({ search: true }).extend({
+        status: z.enum([
+          'PENDING',
+          'PROCESSING',
+          'SUCCESS',
+          'FAILED',
+          'REVERSED'
+        ])
       })
     },
     responses: {
@@ -19,7 +25,8 @@ export class GetTransfers extends OpenAPIRoute {
     },
   };
 
-  async handle(c: AppContext, data: any) {
+  async handle(c: AppContext) {
+    const data = await this.getValidatedData<typeof this.schema>()
     const prisma = getPrismaClient(c.env);
 
     try {

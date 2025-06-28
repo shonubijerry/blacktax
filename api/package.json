@@ -4,8 +4,13 @@
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
+    "dev": "npm run migration:apply && npm run prisma:generate && wrangler dev --persist-to .local_db",
+    "start": "wrangler development --persist-to .local_db",
+    "prisma:generate": "prisma generate",
+    "migration:create": "wrangler d1 migrations create blacktax-dev-db $NAME",
+    "migration:list": "wrangler d1 migrations list blacktax-dev-db",
+    "migration:apply": "echo y | wrangler d1 migrations apply blacktax-dev-db --persist-to .local_db --local",
+    "migrate:prisma": "npx prisma migrate diff --from-empty --to-schema-datamodel ./prisma/schema.prisma --script --output",
     "cf-typegen": "wrangler types --env-interface Env ./env.d.ts"
   },
   "dependencies": {

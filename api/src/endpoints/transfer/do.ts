@@ -28,7 +28,7 @@ export class TransferMoney extends OpenAPIRoute {
     try {
       const transferData = data.body
 
-      if (!(await verifyPayment(transferData.reference, c.env))) {
+      if (!(await verifyPayment(c.env, transferData.reference))) {
         return c.json(
           { success: false, error: 'No payment made for this transaction' },
           400,

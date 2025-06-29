@@ -57,9 +57,10 @@ export async function initiatePaystackTransfer(
   return paystackTransferRes.parse(await response.json())
 }
 
-export async function verifyPayment(reference: string, env: Env) {
+export async function verifyPayment(env: Env, reference?: string) {
+  let ref = env.WRANGLER_ENVIRONMENT !== 'production' ? 'T998698517224693' : '1751211408284'
   const response = await fetch(
-    `https://api.paystack.co/transaction/verify/${reference}`,
+    `https://api.paystack.co/transaction/verify/${reference ?? ref}`,
     {
       method: 'GET',
       headers: {

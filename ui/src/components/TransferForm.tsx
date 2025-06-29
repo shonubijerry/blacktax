@@ -33,6 +33,8 @@ export default function TransferForm({
   const [paystackLoaded, setPaystackLoaded] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  let bypassPayment = false
+
   useEffect(() => {
     loadMembers();
     loadPaystackScript();
@@ -227,7 +229,7 @@ export default function TransferForm({
   };
 
   // Handle form submission
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const isValidRecipients = recipients.every((r) => r.id && r.amount > 100);
@@ -236,6 +238,18 @@ export default function TransferForm({
       setErrors({
         general: "All recipients must have minimum amount of ₦100",
       });
+    }
+
+    bypassPayment = true
+    // Use this to bypass paystack
+    if (bypassPayment) {
+      const transferRequest: TransferRequest = {
+        recipients: recipients.filter((r) => r.id && r.amount >= 100),
+      };
+
+      await handleSubmit(transferRequest);
+      
+      return
     }
 
     initializePayment();

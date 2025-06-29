@@ -37,6 +37,7 @@ jobs:
           workingDirectory: api
           apiToken: ${{ secrets.CF_API_TOKEN }}
           environment: production
+          preCommands: npm run migration:apply
           command: deploy --env production
           secrets: |
             PAYSTACK_SECRET_KEY

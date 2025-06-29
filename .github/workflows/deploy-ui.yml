@@ -29,11 +29,14 @@ jobs:
 
       - name: Deploy UI static worker
         uses: cloudflare/wrangler-action@v3
+        env:
+          NEXTJS_ENV: 'production' # has to be production not staging.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: "pk_live_3c8fffec7f9051ead15d74a7ee980ba375754a2a"
+          NEXT_PUBLIC_API_URL: "https://blacktax_api-production.koredujar.workers.dev"
         with:
           workingDirectory: ui
           apiToken: ${{ secrets.CF_API_TOKEN }}
           environment: production
           preCommands: npm run build:opennextjs
           command: deploy --env production
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}

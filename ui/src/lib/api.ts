@@ -1,5 +1,3 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
-
 export interface FamilyMember {
   id: string;
   name: string;
@@ -78,7 +76,7 @@ class ApiError extends Error {
 }
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',

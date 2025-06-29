@@ -18,9 +18,18 @@ app.use(
   '*',
   cors({
     origin: (origin: string, c: AppContext) => {
-      return c.env.WRANGLER_ENVIRONMENT === 'production'
-      ? 'https://blacktax.koredujar.workers.dev'
-      : 'http://localhost:3000'
+      const isProd = c.env.WRANGLER_ENVIRONMENT === 'production';
+
+      if (isProd) {
+        return 'https://blacktax.koredujar.workers.dev';
+      }
+
+      // Allow localhost in development
+      if (origin && origin.startsWith('http://localhost')) {
+        return origin;
+      }
+
+      return ''; // block other origins
     },
     allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
   }),

@@ -1,0 +1,7 @@
+node_modules
+dist
+.github
+mypipe
+
+next.config.mjs
+**/generated/prisma

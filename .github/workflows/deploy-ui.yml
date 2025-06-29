@@ -1,0 +1,36 @@
+name: Deploy Blacktax UI [prod]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-ui.yml'
+
+jobs:
+  deploy-staging-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download files from current repository
+        uses: actions/checkout@v4
+
+      - name: Intall Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '23.x'
+
+      - name: Install node modules
+        working-directory: ui
+        run: npm ci
+
+      - name: Run lint
+        working-directory: ui
+        run: npm run lint
+
+      - name: Deploy API worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: ui
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          environment: production
+          command: npm run deploy

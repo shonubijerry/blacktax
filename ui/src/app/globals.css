@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+input, select {
+  color: var(--background);
+  background-color: transparent; /* Optional: match background */
+  border: 1px solid var(--foreground); /* Optional: show borders */
+}

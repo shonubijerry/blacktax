@@ -3,7 +3,7 @@
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
+	"$schema": "../node_modules/wrangler/config-schema.json",
 	"name": "blacktax_api",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-06-27",
@@ -23,7 +23,8 @@
   },
   "env": {
     "production": {
-      "name": "database-production",
+      "name": "blacktax_api-production",
+      "account_id": "e5d5d460d5114f727f30dc01a4b9e363",
       "vars": {
         "WRANGLER_ENVIRONMENT": "production"
       },
@@ -31,7 +32,7 @@
         {
           "binding": "DB",
           "database_name": "blacktax-production-database",
-          "database_id": "fa1c2ef1-977f-4694-887b-e022dc0ab61f",
+          "database_id": "d71ac0d9-5b78-4afa-90fc-ac38730efdf1",
           "migrations_dir": "migrations"
         }
       ],

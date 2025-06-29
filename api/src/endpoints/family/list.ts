@@ -1,14 +1,18 @@
-import { Num, OpenAPIRoute, Str } from "chanfana";
-import { getPrismaClient, reqJson } from "../../helper";
-import { AppContext, FamilyMemberResponseSchema, paginationSchema } from "../../types";
+import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
+import { getPrismaClient } from '../../helper'
+import {
+  AppContext,
+  FamilyMemberResponseSchema,
+  paginationSchema,
+} from '../../types'
 
 export class GetFamilyMembers extends OpenAPIRoute {
   schema = {
     tags: ['Family Members'],
     summary: 'Get all active family members',
     request: {
-      query: paginationSchema
+      query: paginationSchema,
     },
     responses: {
       '200': {
@@ -25,25 +29,22 @@ export class GetFamilyMembers extends OpenAPIRoute {
         }),
       },
     },
-  };
+  }
 
   async handle(c: AppContext) {
     const data = await this.getValidatedData<typeof this.schema>()
-    const prisma = getPrismaClient(c.env);
+    const prisma = getPrismaClient(c.env)
 
     try {
-      const { page = 1, limit = 20, search } = data.query;
-      const skip = (page - 1) * limit;
+      const { page = 1, limit = 20, search } = data.query
+      const skip = (page - 1) * limit
 
       const where = {
         isActive: true,
         ...(search && {
-          OR: [
-            { name: { contains: search } },
-            { email: { contains: search } },
-          ],
+          OR: [{ name: { contains: search } }, { email: { contains: search } }],
         }),
-      };
+      }
 
       const [members, total] = await Promise.all([
         prisma.familyMember.findMany({
@@ -53,37 +54,43 @@ export class GetFamilyMembers extends OpenAPIRoute {
           orderBy: { createdAt: 'desc' },
         }),
         prisma.familyMember.count({ where }),
-      ]);
+      ])
 
-      const transformedMembers = members.map(member => ({
+      const transformedMembers = members.map((member) => ({
         ...member,
         createdAt: member.createdAt.toISOString(),
         updatedAt: member.updatedAt.toISOString(),
-      }));
+      }))
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: transformedMembers,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: transformedMembers,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        }),
+        {
+          headers: { 'Content-Type': 'application/json' },
         },
-      }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      )
     } catch (error) {
-      console.error('Error fetching family members:', error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: (error as Error).message || 'Internal server error',
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      console.error('Error fetching family members:', error)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: (error as Error).message || 'Internal server error',
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     } finally {
-      await prisma.$disconnect();
+      await prisma.$disconnect()
     }
   }
 }

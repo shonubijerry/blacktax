@@ -1,8 +1,11 @@
-import { OpenAPIRoute } from "chanfana";
-import { AppContext, FamilyMemberCreateSchema, FamilyMemberResponseSchema } from "../../types";
-import { getPrismaClient, reqJson } from "../../helper";
-import { Context } from "hono";
-import { Prisma } from "../../generated/prisma";
+import { OpenAPIRoute } from 'chanfana'
+import { Prisma } from '../../generated/prisma'
+import { getPrismaClient, reqJson } from '../../helper'
+import {
+  AppContext,
+  FamilyMemberCreateSchema,
+  FamilyMemberResponseSchema,
+} from '../../types'
 
 export class CreateFamilyMember extends OpenAPIRoute {
   schema = {
@@ -20,56 +23,65 @@ export class CreateFamilyMember extends OpenAPIRoute {
         description: 'Invalid request data',
       },
     },
-  };
+  }
 
   async handle(c: AppContext) {
     const data = await this.getValidatedData<typeof this.schema>()
-    const prisma = getPrismaClient(c.env);
+    const prisma = getPrismaClient(c.env)
 
     try {
       const memberData = data.body
 
       // Check if email already exists
       const existingMember = await prisma.familyMember.findUnique({
-        where: { email: memberData.email }
-      });
+        where: { email: memberData.email },
+      })
 
       if (existingMember) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Blacktax recipient with this email already exists',
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Blacktax recipient with this email already exists',
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        )
       }
 
       const familyMember = await prisma.familyMember.create({
         data: memberData as Prisma.FamilyMemberCreateInput,
-      });
+      })
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: {
-          ...familyMember,
-          createdAt: familyMember.createdAt.toISOString(),
-          updatedAt: familyMember.updatedAt.toISOString(),
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            ...familyMember,
+            createdAt: familyMember.createdAt.toISOString(),
+            updatedAt: familyMember.updatedAt.toISOString(),
+          },
+        }),
+        {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
         },
-      }), {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      )
     } catch (error) {
-      console.error('Error creating blacktax recipient:', error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: (error as Error).message || 'Internal server error',
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      console.error('Error creating blacktax recipient:', error)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: (error as Error).message || 'Internal server error',
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     } finally {
-      await prisma.$disconnect();
+      await prisma.$disconnect()
     }
   }
 }

@@ -171,7 +171,7 @@ export default function TransferCard({ transfer }: TransferCardProps) {
       {isExpanded && (
         <div className="border-t bg-gray-50 p-6">
           <div className="space-y-3">
-            {transfer.recipients.map((recipient, index) => (
+            {transfer.recipients.map((recipient) => (
               <div
                 key={recipient.id}
                 className={`border rounded-lg p-4 bg-white ${getRecipientStatusStyles(

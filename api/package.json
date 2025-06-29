@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "format": "prettier  --config .prettierrc --write '*.{json,js}' 'src/**/*.{js,ts}'",
+    "lint": "eslint . --max-warnings 0 --fix",
     "deploy": "wrangler deploy",
     "dev": "npm run migration:apply && npm run prisma:generate && wrangler dev --persist-to .local_db",
     "start": "wrangler development --persist-to .local_db",
@@ -23,6 +25,12 @@
   "devDependencies": {
     "@types/node": "22.13.0",
     "@types/service-worker-mock": "^2.0.4",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier-plugin-organize-imports": "^3.2.4",
     "prisma": "^6.10.1",
     "wrangler": "^4.22.0"
   }

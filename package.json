@@ -4,8 +4,6 @@
   "description": "",
   "main": "index.js",
  "scripts": {
-    "format": "prettier  --config .prettierrc --write '*.{json,js}' 'src/**/*.{js,ts}'",
-    "lint": "eslint . --max-warnings 0 --fix",
     "dev": "concurrently -n 'UI,API' -c auto 'cd ui && npm run dev' 'cd api && npm run dev'"
   },
   "author": "",

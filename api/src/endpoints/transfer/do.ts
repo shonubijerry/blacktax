@@ -1,8 +1,12 @@
-import { OpenAPIRoute } from "chanfana";
-import { generateReference, getPrismaClient, reqJson } from "../../helper";
-import { AppContext, TransferRequestSchema } from "../../types";
-import { createPaystackRecipient, initiatePaystackTransfer, verifyPayment } from "../../paystack/paystack";
-import { $Enums } from "../../generated/prisma";
+import { OpenAPIRoute } from 'chanfana'
+import { $Enums, FamilyMember, TransferRecipient } from '../../generated/prisma'
+import { generateReference, getPrismaClient, reqJson } from '../../helper'
+import {
+  createPaystackRecipient,
+  initiatePaystackTransfer,
+  verifyPayment,
+} from '../../paystack/paystack'
+import { AppContext, TransferRequestSchema } from '../../types'
 
 export class TransferMoney extends OpenAPIRoute {
   schema = {
@@ -15,27 +19,35 @@ export class TransferMoney extends OpenAPIRoute {
       '200': { description: 'Transfer initiated successfully' },
       '400': { description: 'Invalid request data' },
     },
-  };
+  }
 
   async handle(c: AppContext) {
-    const data = await this.getValidatedData<typeof this.schema>();
-    const prisma = getPrismaClient(c.env);
+    const data = await this.getValidatedData<typeof this.schema>()
+    const prisma = getPrismaClient(c.env)
 
     try {
-      const transferData = data.body;
+      const transferData = data.body
 
-      if (!verifyPayment(transferData.reference, c.env)) {
-        return c.json({ success: false, error: 'No payment made for this transaction' }, 400)
+      if (!(await verifyPayment(transferData.reference, c.env))) {
+        return c.json(
+          { success: false, error: 'No payment made for this transaction' },
+          400,
+        )
       }
 
       if (!transferData.recipients.length) {
-        return c.json({ success: false, error: 'No recipient provided' }, 400);
+        return c.json({ success: false, error: 'No recipient provided' }, 400)
       }
 
-      const reference = transferData.reference || generateReference();
-      const recipientIds = transferData.recipients.map(r => r.id);
-      const recipientAmountMap = new Map(transferData.recipients.map(r => [r.id, r.amount]));
-      const totalAmount = [...recipientAmountMap.values()].reduce((a, b) => a + b, 0);
+      const reference = transferData.reference || generateReference()
+      const recipientIds = transferData.recipients.map((r) => r.id)
+      const recipientAmountMap = new Map(
+        transferData.recipients.map((r) => [r.id, r.amount]),
+      )
+      const totalAmount = [...recipientAmountMap.values()].reduce(
+        (a, b) => a + b,
+        0,
+      )
 
       // Step 1: Create the main transfer transaction
       const transfer = await prisma.transferTransaction.create({
@@ -46,36 +58,44 @@ export class TransferMoney extends OpenAPIRoute {
           description: transferData.description,
           status: 'PENDING',
         },
-      });
+      })
 
       // Step 2: Fetch recipients
       const recipients = await prisma.familyMember.findMany({
         where: { id: { in: recipientIds }, isActive: true },
-      });
+      })
 
       if (recipients.length !== recipientIds.length) {
-        throw new Error('Some recipients not found or inactive');
+        throw new Error('Some recipients not found or inactive')
       }
 
-      const transferRecipients = [];
+      const transferRecipients: (TransferRecipient & {
+        recipient: FamilyMember
+        paystack?: {
+          reference?: string
+          status?: string
+          transfer_code?: string
+        }
+        error?: string
+      })[] = []
 
       // Step 3: Process each recipient (outside transaction)
       for (const [index, recipient] of recipients.entries()) {
-        const amount = recipientAmountMap.get(recipient.id)!;
-        const uniqueReference = `${reference}_${index + 1}`;
+        const amount = recipientAmountMap.get(recipient.id)
+        const uniqueReference = `${reference}_${index + 1}`
 
         try {
-          let recipientCode = recipient.paystackRecipientCode;
+          let recipientCode = recipient.paystackRecipientCode
 
           // Create Paystack recipient if missing
           if (!recipientCode) {
-            recipientCode = await createPaystackRecipient(recipient, c.env);
+            recipientCode = await createPaystackRecipient(recipient, c.env)
 
             // Update blacktax recipient with Paystack recipient code
             await prisma.familyMember.update({
               where: { id: recipient.id },
               data: { paystackRecipientCode: recipientCode },
-            });
+            })
           }
 
           // Call Paystack to initiate transfer
@@ -83,8 +103,8 @@ export class TransferMoney extends OpenAPIRoute {
             recipientCode,
             amount,
             uniqueReference,
-            c.env
-          );
+            c.env,
+          )
 
           // Create transferRecipient in DB
           const transferRecipient = await prisma.transferRecipient.create({
@@ -92,20 +112,20 @@ export class TransferMoney extends OpenAPIRoute {
               transferId: transfer.id,
               recipientId: recipient.id,
               amount,
-              status: transferResult.status === 'success' ? 'SUCCESS' : 'PENDING',
+              status:
+                transferResult.status === 'success' ? 'SUCCESS' : 'PENDING',
               paystackTransferCode: transferResult.transfer_code,
               paystackReference: transferResult.reference,
             },
-          });
+          })
 
           transferRecipients.push({
             ...transferRecipient,
             recipient,
             paystack: transferResult,
-          });
-
+          })
         } catch (error) {
-          console.error(`Transfer failed for recipient ${recipient.id}:`, error);
+          console.error(`Transfer failed for recipient ${recipient.id}:`, error)
 
           const failedRecipient = await prisma.transferRecipient.create({
             data: {
@@ -115,58 +135,61 @@ export class TransferMoney extends OpenAPIRoute {
               status: 'FAILED',
               failureReason: (error as Error).message,
             },
-          });
+          })
 
           transferRecipients.push({
             ...failedRecipient,
             recipient,
             error: (error as Error).message,
-          });
+          })
         }
       }
 
       // Step 4: Calculate overall status
       const statusCounts = transferRecipients.reduce(
         (acc, r) => {
-          acc[r.status] = (acc[r.status] || 0) + 1;
-          return acc;
+          acc[r.status] = (acc[r.status] || 0) + 1
+          return acc
         },
-        {} as Record<$Enums.TransferStatus, number>
-      );
+        {} as Record<$Enums.TransferStatus, number>,
+      )
 
-      let overallStatus: $Enums.TransferStatus = 'PENDING';
+      let overallStatus: $Enums.TransferStatus = 'PENDING'
       if (statusCounts.SUCCESS === transferRecipients.length) {
-        overallStatus = 'SUCCESS';
+        overallStatus = 'SUCCESS'
       } else if (statusCounts.FAILED === transferRecipients.length) {
-        overallStatus = 'FAILED';
+        overallStatus = 'FAILED'
       } else {
-        overallStatus = 'PROCESSING';
+        overallStatus = 'PROCESSING'
       }
 
       const updatedTransfer = await prisma.transferTransaction.update({
         where: { id: transfer.id },
         data: { status: overallStatus },
-      });
+      })
 
-      return c.json({
-        success: true,
-        data: {
-          ...updatedTransfer,
-          createdAt: updatedTransfer.createdAt.toISOString(),
-          updatedAt: updatedTransfer.updatedAt.toISOString(),
-          recipients: transferRecipients.map((r) => ({
-            ...r,
-            createdAt: r.createdAt?.toISOString?.() || '',
-            updatedAt: r.updatedAt?.toISOString?.() || '',
-            transferredAt: r.transferredAt?.toISOString?.() || null,
-          })),
+      return c.json(
+        {
+          success: true,
+          data: {
+            ...updatedTransfer,
+            createdAt: updatedTransfer.createdAt.toISOString(),
+            updatedAt: updatedTransfer.updatedAt.toISOString(),
+            recipients: transferRecipients.map((r) => ({
+              ...r,
+              createdAt: r.createdAt?.toISOString?.() || '',
+              updatedAt: r.updatedAt?.toISOString?.() || '',
+              transferredAt: r.transferredAt?.toISOString?.() || null,
+            })),
+          },
         },
-      }, 200);
+        200,
+      )
     } catch (error) {
-      console.error('Error processing transfer:', error);
-      return c.json({ success: false, error: (error as Error).message }, 500);
+      console.error('Error processing transfer:', error)
+      return c.json({ success: false, error: (error as Error).message }, 500)
     } finally {
-      await prisma.$disconnect();
+      await prisma.$disconnect()
     }
   }
 }

@@ -1,6 +1,6 @@
-import { OpenAPIRoute } from "chanfana";
-import { getPrismaClient } from "../../helper";
-import { AppContext, BankSchema } from "../../types";
+import { OpenAPIRoute } from 'chanfana'
+import { getPrismaClient } from '../../helper'
+import { AppContext, BankSchema } from '../../types'
 
 export class ListBanks extends OpenAPIRoute {
   schema = {
@@ -13,17 +13,19 @@ export class ListBanks extends OpenAPIRoute {
         schema: BankSchema.array(),
       },
     },
-  };
+  }
 
   async handle(c: AppContext) {
-    const prisma = getPrismaClient(c.env);
+    const prisma = getPrismaClient(c.env)
 
-    return new Response(JSON.stringify({
-      success: true,
-      data: await prisma.bank.findMany({}),
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: await prisma.bank.findMany({}),
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
   }
 }

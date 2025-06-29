@@ -1,0 +1,44 @@
+name: Deploy Blacktax API [prod]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-api.yml'
+
+jobs:
+  deploy-staging-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download files from current repository
+        uses: actions/checkout@v4
+
+      - name: Intall Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '23.x'
+
+      - name: Install Api node modules
+        working-directory: api
+        run: npm ci
+
+      - name: Generate prisma types
+        working-directory: api
+        run: npm run prisma:generate
+
+      - name: Run lint
+        working-directory: api
+        run: npm run lint
+
+      - name: Deploy API worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: api
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          environment: production
+          command: deploy --env production
+          secrets: |
+            PAYSTACK_SECRET_KEY
+        env:
+          PAYSTACK_SECRET_KEY: ${{ secrets.PROD_PAYSTACK_SECRET_KEY }}

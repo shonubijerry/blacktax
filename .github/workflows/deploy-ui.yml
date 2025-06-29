@@ -33,5 +33,5 @@ jobs:
           workingDirectory: ui
           apiToken: ${{ secrets.CF_API_TOKEN }}
           environment: production
-          preCommands: npm run deploy --env=production
-          command: wrangler whoami --help
+          preCommands: npm run build:opennextjs
+          command: deploy --env production

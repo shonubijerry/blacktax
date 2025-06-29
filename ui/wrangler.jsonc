@@ -24,7 +24,7 @@
 			"account_id": "e5d5d460d5114f727f30dc01a4b9e363",
 			"vars": {
 				"NEXTJS_ENV": "production",
-				"NEXT_PUBLIC_API_URL": "http://localhost:8787",
+				"NEXT_PUBLIC_API_URL": "https://blacktax_api-production.koredujar.workers.dev",
 				"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_live_3c8fffec7f9051ead15d74a7ee980ba375754a2a"
 			},
 		}

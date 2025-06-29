@@ -17,7 +17,11 @@ const app = new Hono<{ Bindings: Env }>()
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:3000', 'HTTPS://blacktax.koredujar.workers.dev'],
+    origin: (origin: string, c: AppContext) => {
+      return c.env.WRANGLER_ENVIRONMENT === 'production'
+      ? 'https://blacktax.koredujar.workers.dev'
+      : 'http://localhost:3000'
+    },
     allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
   }),
 )

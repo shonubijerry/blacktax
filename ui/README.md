@@ -77,10 +77,10 @@ npm start
 The app integrates with the following API endpoints:
 
 - `GET /family-members` - List family members with pagination and search
-- `POST /family-members` - Create new family member
-- `GET /family-members/:id` - Get specific family member
-- `PUT /family-members/:id` - Update family member
-- `DELETE /family-members/:id` - Delete family member
+- `POST /family-members` - Create new blacktax recipient
+- `GET /family-members/:id` - Get specific blacktax recipient
+- `PUT /family-members/:id` - Update blacktax recipient
+- `DELETE /family-members/:id` - Delete blacktax recipient
 - `POST /transfer` - Create money transfer
 - `GET /transfers` - List transfer history
 

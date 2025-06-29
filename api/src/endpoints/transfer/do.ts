@@ -67,7 +67,7 @@ export class TransferMoney extends OpenAPIRoute {
           if (!recipientCode) {
             recipientCode = await createPaystackRecipient(recipient, c.env);
 
-            // Update family member with Paystack recipient code
+            // Update blacktax recipient with Paystack recipient code
             await prisma.familyMember.update({
               where: { id: recipient.id },
               data: { paystackRecipientCode: recipientCode },

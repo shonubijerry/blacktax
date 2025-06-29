@@ -44,16 +44,28 @@ export interface Transfer {
   status: string;
   totalAmount: number;
   description?: string;
+  currency?: string;
+  paystackBatchId: string;
   createdAt: string;
+  updatedAt: string;
   recipients: Array<{
     id: string;
     amount: number;
+    status: string;
+    paystackReference: string;
+    transferredAt: string;
+    failureReason: string;
     recipient: {
       id: string
       name: string;
       email: string;
     }
   }>;
+}
+
+export interface Bank {
+  name: string;
+  code: string;
 }
 
 class ApiError extends Error {
@@ -81,7 +93,7 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   return response.json();
 }
 
-export const familyApi = {
+export const blackTaxApi = {
   // Family Members
   getMembers: (params?: { page?: number; limit?: number; search?: string }) => {
     const searchParams = new URLSearchParams();
@@ -122,4 +134,7 @@ export const familyApi = {
 
   getTransfers: () =>
     apiRequest<{ data: Transfer[] }>('/transfers'),
+
+  getBanks: () =>
+    apiRequest<{ data: Bank[] }>('/banks'),
 };

@@ -6,18 +6,18 @@ import { AppContext } from "../../types";
 export class DeleteFamilyMember extends OpenAPIRoute {
   schema = {
     tags: ['Family Members'],
-    summary: 'Deactivate a family member',
+    summary: 'Deactivate a blacktax recipient',
     request: {
       params: z.object({
-        id: z.string().describe('Family member ID'),
+        id: z.string().describe('Blacktax recipient ID'),
       }),
     },
     responses: {
       '200': {
-        description: 'Family member deactivated successfully',
+        description: 'Blacktax recipient deactivated successfully',
       },
       '404': {
-        description: 'Family member not found',
+        description: 'Blacktax recipient not found',
       },
     },
   };
@@ -36,7 +36,7 @@ export class DeleteFamilyMember extends OpenAPIRoute {
       if (!existingMember) {
         return new Response(JSON.stringify({
           success: false,
-          error: 'Family member not found',
+          error: 'Blacktax recipient not found',
         }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' },
@@ -50,12 +50,12 @@ export class DeleteFamilyMember extends OpenAPIRoute {
 
       return new Response(JSON.stringify({
         success: true,
-        message: 'Family member deactivated successfully',
+        message: 'Blacktax recipient deactivated successfully',
       }), {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Error deactivating family member:', error);
+      console.error('Error deactivating blacktax recipient:', error);
       return new Response(JSON.stringify({
         success: false,
         error: (error as Error).message || 'Internal server error',

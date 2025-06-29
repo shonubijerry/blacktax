@@ -11,10 +11,10 @@ datasource db {
 }
 
 model FamilyMember {
-  id                    String   @id @default(cuid())
+  id                    String   @id @default(cuid(2))
   name                  String
   email                 String   @unique
-  phone                 String
+  phone                 String?
   accountNumber         String   @map("account_number")
   bankCode              String   @map("bank_code")
   bankName              String?  @map("bank_name")
@@ -27,12 +27,21 @@ model FamilyMember {
   // Relations
   sentTransfers     TransferTransaction[] @relation("SenderTransfers")
   receivedTransfers TransferRecipient[]
+  @@unique([accountNumber, bankCode], map: "by_accountnumber_bankcode")
 
   @@map("family_members")
 }
 
+model Bank {
+  id      String @id @default(cuid(2))
+  name    String
+  code    String @unique
+
+  @@map("banks")
+}
+
 model TransferTransaction {
-  id              String         @id @default(cuid())
+  id              String         @id @default(cuid(2))
   reference       String         @unique
   senderId        String?        @map("sender_id")
   totalAmount     Float          @map("total_amount")
@@ -52,7 +61,7 @@ model TransferTransaction {
 }
 
 model TransferRecipient {
-  id                   String         @id @default(cuid())
+  id                   String         @id @default(cuid(2))
   transferId           String         @map("transfer_id")
   recipientId          String         @map("recipient_id")
   amount               Float

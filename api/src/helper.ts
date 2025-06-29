@@ -1,6 +1,6 @@
 import { PrismaD1 } from "@prisma/adapter-d1";
-import { PrismaClient } from "@prisma/client";
-import { ZodType, ZodTypeDef } from "zod";
+import { PrismaClient } from "./generated/prisma";
+import { ZodType } from "zod";
 
 export function generateReference(): string {
   return `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

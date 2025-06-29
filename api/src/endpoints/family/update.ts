@@ -6,20 +6,20 @@ import { z } from 'zod';
 export class UpdateFamilyMember extends OpenAPIRoute {
   schema = {
     tags: ['Family Members'],
-    summary: 'Update a family member',
+    summary: 'Update a blacktax recipient',
     request: {
       params: z.object({
-        id: z.string().describe('Family member ID'),
+        id: z.string().describe('Blacktax recipient ID'),
       }),
       body: reqJson(FamilyMemberUpdateSchema)
     },
     responses: {
       '200': {
-        description: 'Family member updated successfully',
+        description: 'Blacktax recipient updated successfully',
         schema: FamilyMemberResponseSchema,
       },
       '404': {
-        description: 'Family member not found',
+        description: 'Blacktax recipient not found',
       },
     },
   };
@@ -40,7 +40,7 @@ export class UpdateFamilyMember extends OpenAPIRoute {
       if (!existingMember) {
         return new Response(JSON.stringify({
           success: false,
-          error: 'Family member not found',
+          error: 'Blacktax recipient not found',
         }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' },
@@ -85,7 +85,7 @@ export class UpdateFamilyMember extends OpenAPIRoute {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Error updating family member:', error);
+      console.error('Error updating blacktax recipient:', error);
       return new Response(JSON.stringify({
         success: false,
         error: (error as Error).message || 'Internal server error',

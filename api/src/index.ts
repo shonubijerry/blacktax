@@ -9,6 +9,7 @@ import { DeleteFamilyMember } from "./endpoints/family/delete";
 import { TransferMoney } from "./endpoints/transfer/do";
 import { GetTransfers } from "./endpoints/transfer/list";
 import { AppContext } from "./types";
+import { ListBanks } from "./endpoints/transfer/banks";
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
@@ -30,9 +31,9 @@ const openapi = fromHono(app, {
 	docs_url: "/",
 	schema: {
 		info: {
-			title: 'Family Money Transfer API',
+			title: 'Blacktax API',
 			version: '2.0.0',
-			description: 'API for managing family member accounts and transferring money via Paystack with D1 database',
+			description: 'API for managing blacktax accounts and transferring money via Paystack with D1 database',
 		},
 	},
 });
@@ -45,6 +46,7 @@ openapi.put('/family-members/:id', UpdateFamilyMember);
 openapi.delete('/family-members/:id', DeleteFamilyMember);
 openapi.post('/transfer', TransferMoney);
 openapi.get('/transfers', GetTransfers);
+openapi.get('/banks', ListBanks);
 
 // You may also register routes for non OpenAPI directly on Hono
 // app.get('/test', (c) => c.text('Hono!'))

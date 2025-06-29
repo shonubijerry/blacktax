@@ -47,6 +47,13 @@ CREATE TABLE "transfer_recipients" (
     CONSTRAINT "transfer_recipients_recipient_id_fkey" FOREIGN KEY ("recipient_id") REFERENCES "family_members" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
+-- CreateTable
+CREATE TABLE "banks" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "code" TEXT NOT NULL
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "family_members_email_key" ON "family_members"("email");
 
@@ -55,3 +62,6 @@ CREATE UNIQUE INDEX "transfer_transactions_reference_key" ON "transfer_transacti
 
 -- CreateIndex
 CREATE UNIQUE INDEX "transfer_recipients_transfer_id_recipient_id_key" ON "transfer_recipients"("transfer_id", "recipient_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "by_bank_code" ON "banks"("code");

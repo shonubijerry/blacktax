@@ -7,13 +7,13 @@ import { Prisma } from "../../generated/prisma";
 export class CreateFamilyMember extends OpenAPIRoute {
   schema = {
     tags: ['Family Members'],
-    summary: 'Create a new family member',
+    summary: 'Create a new blacktax recipient',
     request: {
       body: reqJson(FamilyMemberCreateSchema),
     },
     responses: {
       '201': {
-        description: 'Family member created successfully',
+        description: 'Blacktax recipient created successfully',
         schema: FamilyMemberResponseSchema,
       },
       '400': {
@@ -37,7 +37,7 @@ export class CreateFamilyMember extends OpenAPIRoute {
       if (existingMember) {
         return new Response(JSON.stringify({
           success: false,
-          error: 'Family member with this email already exists',
+          error: 'Blacktax recipient with this email already exists',
         }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
@@ -60,7 +60,7 @@ export class CreateFamilyMember extends OpenAPIRoute {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Error creating family member:', error);
+      console.error('Error creating blacktax recipient:', error);
       return new Response(JSON.stringify({
         success: false,
         error: (error as Error).message || 'Internal server error',

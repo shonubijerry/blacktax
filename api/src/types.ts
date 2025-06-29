@@ -52,3 +52,9 @@ export const paystackTransferRes = z.object({
 	reference: z.string(),
 	transfer_code: z.string(),
 });
+
+export const BankSchema = z.object({
+  id: z.string().cuid2(),
+  name: z.string(),
+  code: z.string(),
+})

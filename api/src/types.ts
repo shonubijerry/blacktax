@@ -48,13 +48,23 @@ export const paginationSchema = z.object({
 })
 
 export const paystackTransferRes = z.object({
-	status: z.string(),
-	reference: z.string(),
-	transfer_code: z.string(),
-});
+	status: z.boolean(),
+	data: z.object({
+		status: z.string(),
+		reference: z.string(),
+		transfer_code: z.string(),
+	})
+}).transform(value => value.data)
+
+export const verifyTransactionRes = z.object({
+	status: z.boolean(),
+	data: z.object({
+		status: z.string(),
+	})
+}).transform(value => value.data.status === 'success')
 
 export const BankSchema = z.object({
-  id: z.string().cuid2(),
-  name: z.string(),
-  code: z.string(),
+	id: z.string().cuid2(),
+	name: z.string(),
+	code: z.string(),
 })

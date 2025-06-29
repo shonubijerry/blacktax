@@ -1,8 +1,8 @@
 import { OpenAPIRoute } from "chanfana";
 import { generateReference, getPrismaClient, reqJson } from "../../helper";
 import { AppContext, TransferRequestSchema } from "../../types";
-import { createPaystackRecipient, initiatePaystackTransfer } from "../../paystack/paystack";
-import { $Enums } from "@prisma/client";
+import { createPaystackRecipient, initiatePaystackTransfer, verifyPayment } from "../../paystack/paystack";
+import { $Enums } from "../../generated/prisma";
 
 export class TransferMoney extends OpenAPIRoute {
   schema = {
@@ -24,8 +24,12 @@ export class TransferMoney extends OpenAPIRoute {
     try {
       const transferData = data.body;
 
+      if (!verifyPayment(transferData.reference, c.env)) {
+        return c.json({ success: false, error: 'No payment made for this transaction' }, 400)
+      }
+
       if (!transferData.recipients.length) {
-        return c.json({ success: false, status: 400, error: 'No recipient provided' });
+        return c.json({ success: false, error: 'No recipient provided' }, 400);
       }
 
       const reference = transferData.reference || generateReference();
@@ -157,7 +161,7 @@ export class TransferMoney extends OpenAPIRoute {
             transferredAt: r.transferredAt?.toISOString?.() || null,
           })),
         },
-      });
+      }, 200);
     } catch (error) {
       console.error('Error processing transfer:', error);
       return c.json({ success: false, error: (error as Error).message }, 500);

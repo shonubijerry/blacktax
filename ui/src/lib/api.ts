@@ -68,6 +68,8 @@ export interface Bank {
   code: string;
 }
 
+interface Pagination { page?: number; limit?: number; }
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -102,7 +104,7 @@ export const blackTaxApi = {
     if (params?.search) searchParams.append('search', params.search);
 
     const query = searchParams.toString();
-    return apiRequest<{ data: FamilyMember[]; pagination: any }>(`/family-members${query ? `?${query}` : ''}`);
+    return apiRequest<{ data: FamilyMember[]; pagination: Pagination }>(`/family-members${query ? `?${query}` : ''}`);
   },
 
   getMember: (id: string) =>

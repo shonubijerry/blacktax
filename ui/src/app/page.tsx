@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FamilyMember, Transfer, blackTaxApi, CreateFamilyMemberData, UpdateFamilyMemberData, TransferRequest } from '@/lib/api';
 import FamilyMemberForm from '@/components/FamilyMemberForm';
 import TransferForm from '@/components/TransferForm';
@@ -18,15 +18,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (currentView === 'members') {
-      loadMembers();
-    } else if (currentView === 'transfers') {
-      loadTransfers();
-    }
-  }, [currentView]);
-
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await blackTaxApi.getMembers({ search: searchTerm });
@@ -36,7 +28,15 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (currentView === 'members') {
+      loadMembers();
+    } else if (currentView === 'transfers') {
+      loadTransfers();
+    }
+  }, [currentView, loadMembers]);
 
   const loadTransfers = async () => {
     try {
@@ -161,7 +161,7 @@ export default function Home() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">
-                Blacktax Transfer
+                Blacktax
               </h1>
               <div className="flex space-x-3">
                 <button

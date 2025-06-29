@@ -4,11 +4,11 @@ on:
     branches:
       - master
     paths:
-      - 'api/**'
+      - 'ui/**'
       - '.github/workflows/deploy-ui.yml'
 
 jobs:
-  deploy-staging-api:
+  deploy-ui:
     runs-on: ubuntu-latest
     steps:
       - name: Download files from current repository
@@ -27,10 +27,11 @@ jobs:
         working-directory: ui
         run: npm run lint
 
-      - name: Deploy API worker
+      - name: Deploy UI static worker
         uses: cloudflare/wrangler-action@v3
         with:
           workingDirectory: ui
           apiToken: ${{ secrets.CF_API_TOKEN }}
           environment: production
-          command: npm run deploy
+          preCommands: npm run deploy
+          command: wrangler whoami --help

@@ -1,12 +1,12 @@
 import { OpenAPIRoute } from 'chanfana'
 import { $Enums, FamilyMember, TransferRecipient } from '../../generated/prisma'
 import { generateReference, getPrismaClient, reqJson } from '../../helper'
+import { PaystackClient } from '../../paystack/paystack'
 import {
-  createPaystackRecipient,
-  initiateBulkPaystackTransfer,
-  verifyPayment,
-} from '../../paystack/paystack'
-import { AppContext, TransferRequestSchema } from '../../types'
+  AppContext,
+  PaystackBulkTransfer,
+  TransferRequestSchema,
+} from '../../types'
 
 export class TransferMoney extends OpenAPIRoute {
   schema = {
@@ -24,11 +24,12 @@ export class TransferMoney extends OpenAPIRoute {
   async handle(c: AppContext) {
     const data = await this.getValidatedData<typeof this.schema>()
     const prisma = getPrismaClient(c.env)
+    const paystack = new PaystackClient(c.env)
 
     try {
       const transferData = data.body
 
-      if (!(await verifyPayment(c.env, transferData.reference))) {
+      if (!(await paystack.verifyTransaction(transferData.reference))) {
         return c.json(
           { success: false, error: 'No payment made for this transaction' },
           400,
@@ -70,7 +71,12 @@ export class TransferMoney extends OpenAPIRoute {
       }
 
       // Step 3: Prepare recipients and ensure they have Paystack recipient codes
-      const bulkTransferData = []
+      const bulkTransferData: {
+        amount: number
+        recipient: string
+        reference: string
+        reason: string
+      }[] = []
       const transferRecipients: (TransferRecipient & {
         recipient: FamilyMember
         error?: string
@@ -85,7 +91,7 @@ export class TransferMoney extends OpenAPIRoute {
 
           // Create Paystack recipient if missing
           if (!recipientCode) {
-            recipientCode = await createPaystackRecipient(recipient, c.env)
+            recipientCode = await paystack.createRecipient(recipient)
 
             // Update recipient with Paystack recipient code
             await prisma.familyMember.update({
@@ -140,18 +146,16 @@ export class TransferMoney extends OpenAPIRoute {
 
       // Step 4: Initiate bulk transfer if we have valid recipients
       const validTransfers = bulkTransferData.filter(Boolean)
-      let bulkTransferResult: Awaited<ReturnType<typeof initiateBulkPaystackTransfer>> = null
+      let bulkTransferResult: PaystackBulkTransfer = null
 
       if (validTransfers.length > 0) {
         try {
-          bulkTransferResult = await initiateBulkPaystackTransfer(
-            c.env,
-            validTransfers
-          )
+          bulkTransferResult =
+            await paystack.initiateBulkTransfer(validTransfers)
 
           // Update transfer recipients with bulk transfer results
           if (bulkTransferResult && bulkTransferResult.length > 0) {
-            for (const [index, result] of bulkTransferResult.entries()) {
+            for (const [, result] of bulkTransferResult.entries()) {
               const transferRecipient = transferRecipients.find(
                 (tr) => tr.paystackReference === result.reference,
               )
@@ -166,7 +170,8 @@ export class TransferMoney extends OpenAPIRoute {
                 })
 
                 // Update local object for response
-                transferRecipient.status = result.status === 'success' ? 'SUCCESS' : 'PENDING'
+                transferRecipient.status =
+                  result.status === 'success' ? 'SUCCESS' : 'PENDING'
                 transferRecipient.paystackTransferCode = result.transfer_code
               }
             }

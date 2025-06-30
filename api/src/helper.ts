@@ -20,7 +20,9 @@ export const reqJson = <T extends ZodType>(schema: T) => ({
 })
 
 // Helper function to map Paystack status to local enum
-export const mapPaystackStatusToLocal = (paystackStatus: string): $Enums.TransferStatus => {
+export const mapPaystackStatusToLocal = (
+  paystackStatus: string,
+): $Enums.TransferStatus => {
   switch (paystackStatus.toLowerCase()) {
     case 'success':
     case 'successful':

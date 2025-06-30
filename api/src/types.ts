@@ -63,13 +63,17 @@ export const paystackTransferRes = z
 export const paystackBulkTransferRes = z
   .object({
     status: z.boolean(),
-    data: z.object({
-      status: z.string(),
-      reference: z.string(),
-      transfer_code: z.string(),
-    }).array(),
+    data: z
+      .object({
+        status: z.string(),
+        reference: z.string(),
+        transfer_code: z.string(),
+      })
+      .array(),
   })
   .transform((value) => value.data)
+
+export type PaystackBulkTransfer = z.infer<typeof paystackBulkTransferRes>
 
 export const verifyTransactionRes = z
   .object({

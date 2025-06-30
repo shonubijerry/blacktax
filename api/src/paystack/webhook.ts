@@ -1,6 +1,13 @@
 import { OpenAPIRoute } from 'chanfana'
-import { AppContext } from '../types'
 import { getPrismaClient } from '../helper'
+import { AppContext } from '../types'
+
+type TransferStatus = {
+  reference: string
+  transfer_code: string
+  status: string
+  failure_reason: string
+}
 
 export class PaystackWebhookHandler extends OpenAPIRoute {
   schema = {
@@ -28,9 +35,15 @@ export class PaystackWebhookHandler extends OpenAPIRoute {
         return c.json({ error: 'Invalid signature' }, 400)
       }
 
-      const event = JSON.parse(body)
+      const event = JSON.parse(body) as {
+        event: string
+        data: TransferStatus
+      }
 
-      if (event.event === 'transfer.success' || event.event === 'transfer.failed') {
+      if (
+        event.event === 'transfer.success' ||
+        event.event === 'transfer.failed'
+      ) {
         await this.handleTransferStatusChange(event.data, c)
       }
 
@@ -41,7 +54,10 @@ export class PaystackWebhookHandler extends OpenAPIRoute {
     }
   }
 
-  private async handleTransferStatusChange(transferData: any, c: AppContext) {
+  private async handleTransferStatusChange(
+    transferData: TransferStatus,
+    c: AppContext,
+  ) {
     const prisma = getPrismaClient(c.env)
 
     try {
@@ -56,19 +72,23 @@ export class PaystackWebhookHandler extends OpenAPIRoute {
       })
 
       if (transferRecipient) {
-        const newStatus = transferData.status === 'success' ? 'SUCCESS' : 'FAILED'
+        const newStatus =
+          transferData.status === 'success' ? 'SUCCESS' : 'FAILED'
 
         await prisma.transferRecipient.update({
           where: { id: transferRecipient.id },
           data: {
             status: newStatus,
             transferredAt: newStatus === 'SUCCESS' ? new Date() : undefined,
-            failureReason: newStatus === 'FAILED' ? transferData.failure_reason : undefined,
+            failureReason:
+              newStatus === 'FAILED' ? transferData.failure_reason : undefined,
             updatedAt: new Date(),
           },
         })
 
-        console.log(`Updated transfer recipient ${transferRecipient.id} to ${newStatus}`)
+        console.log(
+          `Updated transfer recipient ${transferRecipient.id} to ${newStatus}`,
+        )
       }
     } catch (error) {
       console.error('Error updating transfer from webhook:', error)

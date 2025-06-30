@@ -16,7 +16,7 @@ async function runBulkStatusUpdate(context: AppContext) {
 
 export async function handleScheduledEvent(
   event: ScheduledEvent,
-  env: any,
+  env: Env,
   ctx: ExecutionContext,
 ): Promise<void> {
   // Create context similar to your regular API context

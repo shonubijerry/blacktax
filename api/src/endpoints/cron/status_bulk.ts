@@ -1,7 +1,7 @@
-import { OpenAPIRoute } from "chanfana"
-import { AppContext } from "../../types"
-import { getPrismaClient, mapPaystackStatusToLocal } from "../../helper"
-import { fetchPaystackTransferStatus } from "../../paystack/paystack"
+import { OpenAPIRoute } from 'chanfana'
+import { getPrismaClient, mapPaystackStatusToLocal } from '../../helper'
+import { PaystackClient } from '../../paystack/paystack'
+import { AppContext } from '../../types'
 
 // Bulk transfer status checker (alternative approach for bulk transfers)
 export class UpdateBulkTransferStatusCron extends OpenAPIRoute {
@@ -47,7 +47,7 @@ export class UpdateBulkTransferStatusCron extends OpenAPIRoute {
         if (!batchGroups.has(batchKey)) {
           batchGroups.set(batchKey, [])
         }
-        batchGroups.get(batchKey)!.push(transfer)
+        batchGroups.get(batchKey).push(transfer)
       }
 
       for (const [batchKey, transfers] of batchGroups) {
@@ -56,24 +56,34 @@ export class UpdateBulkTransferStatusCron extends OpenAPIRoute {
           // Otherwise, fall back to individual status checks
           for (const transfer of transfers) {
             for (const recipient of transfer.recipients) {
-              if (recipient.status === 'PENDING' || recipient.status === 'PROCESSING') {
+              if (
+                recipient.status === 'PENDING' ||
+                recipient.status === 'PROCESSING'
+              ) {
                 try {
-                  const paystackStatus = await fetchPaystackTransferStatus(
+                  const paystackStatus = await new PaystackClient(
                     c.env,
+                  ).fetchTransferStatus(
                     recipient.paystackTransferCode,
                     recipient.paystackReference,
                   )
 
                   if (paystackStatus) {
-                    const newStatus = mapPaystackStatusToLocal(paystackStatus.status)
+                    const newStatus = mapPaystackStatusToLocal(
+                      paystackStatus.status,
+                    )
 
                     if (newStatus !== recipient.status) {
                       await prisma.transferRecipient.update({
                         where: { id: recipient.id },
                         data: {
                           status: newStatus,
-                          transferredAt: newStatus === 'SUCCESS' ? new Date() : undefined,
-                          failureReason: newStatus === 'FAILED' ? paystackStatus.failure_reason : undefined,
+                          transferredAt:
+                            newStatus === 'SUCCESS' ? new Date() : undefined,
+                          failureReason:
+                            newStatus === 'FAILED'
+                              ? paystackStatus.failure_reason
+                              : undefined,
                           updatedAt: new Date(),
                         },
                       })
@@ -81,7 +91,10 @@ export class UpdateBulkTransferStatusCron extends OpenAPIRoute {
                     }
                   }
                 } catch (error) {
-                  console.error(`Error updating recipient ${recipient.id}:`, error)
+                  console.error(
+                    `Error updating recipient ${recipient.id}:`,
+                    error,
+                  )
                   errorCount++
                 }
               }

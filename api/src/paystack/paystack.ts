@@ -1,177 +1,144 @@
-import { paystackBulkTransferRes, paystackTransferRes, verifyTransactionRes } from '../types'
+import {
+  paystackBulkTransferRes,
+  paystackTransferRes,
+  verifyTransactionRes,
+} from '../types'
 
-export async function createPaystackRecipient(
-  member: { name: string; accountNumber: string; bankCode: string },
-  env: Env,
-) {
-  const response = await fetch('https://api.paystack.co/transferrecipient', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      type: 'nuban',
-      name: member.name,
-      account_number: member.accountNumber,
-      bank_code: member.bankCode,
-      currency: 'NGN',
-    }),
-  })
+export class PaystackClient {
+  private readonly baseUrl = 'https://api.paystack.co'
+  private readonly secretKey: string
+  private readonly isProduction: boolean
 
-  if (!response.ok) {
-    const error: Error = await response.json()
-    throw new Error(`Failed to create Paystack recipient: ${error.message}`)
+  constructor(private env: Env) {
+    this.secretKey = env.PAYSTACK_SECRET_KEY
+    this.isProduction = env.WRANGLER_ENVIRONMENT === 'production'
   }
 
-  const data: { data: { recipient_code: string } } = await response.json()
-  return data.data.recipient_code
-}
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit & { method: 'GET' | 'POST' },
+  ): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${this.secretKey}`,
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    })
 
-export async function initiateBulkPaystackTransfer(
-  env: Env,
-  transfers: {
+    if (!response.ok) {
+      const error: Error = await response.json()
+      throw new Error(error?.message || 'Paystack API request failed')
+    }
+
+    return response.json()
+  }
+
+  async createRecipient(member: {
+    name: string
+    accountNumber: string
+    bankCode: string
+  }): Promise<string> {
+    const result = await this.request<{ data: { recipient_code: string } }>(
+      '/transferrecipient',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'nuban',
+          name: member.name,
+          account_number: member.accountNumber,
+          bank_code: member.bankCode,
+          currency: 'NGN',
+        }),
+      },
+    )
+
+    return result.data.recipient_code
+  }
+
+  async initiateTransfer(
+    recipientCode: string,
     amount: number,
     reference: string,
-    reason: string,
-    recipient: string
-  }[]
-) {
-  const response = await fetch('https://api.paystack.co/transfer/bulk', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      source: 'balance',
-      currency: 'NGN',
-      transfers,
-    }),
-  })
+  ) {
+    const result = await this.request<unknown>('/transfer', {
+      method: 'POST',
+      body: JSON.stringify({
+        source: 'balance',
+        recipient: recipientCode,
+        amount: Math.round(amount * 100),
+        reference,
+        reason: 'Family transfer',
+      }),
+    })
 
-  if (!response.ok) {
-    const error: Error = await response.json()
-    throw new Error(`Failed to initiate transfer: ${error.message}`)
+    return paystackTransferRes.parse(result)
   }
 
-  return paystackBulkTransferRes.parse(await response.json())
-}
+  async initiateBulkTransfer(
+    transfers: {
+      amount: number
+      reference: string
+      reason: string
+      recipient: string
+    }[],
+  ) {
+    const result = await this.request<unknown>('/transfer/bulk', {
+      method: 'POST',
+      body: JSON.stringify({
+        source: 'balance',
+        currency: 'NGN',
+        transfers,
+      }),
+    })
 
-export async function initiatePaystackTransfer(
-  recipientCode: string,
-  amount: number,
-  reference: string,
-  env: Env,
-) {
-  const response = await fetch('https://api.paystack.co/transfer', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      source: 'balance',
-      recipient: recipientCode,
-      amount: Math.round(amount * 100), // Convert to kobo
-      reference,
-      reason: 'Family transfer',
-    }),
-  })
-
-  if (!response.ok) {
-    const error: Error = await response.json()
-    throw new Error(`Failed to initiate transfer: ${error.message}`)
+    return paystackBulkTransferRes.parse(result)
   }
 
-  return paystackTransferRes.parse(await response.json())
-}
+  async verifyTransaction(reference?: string) {
+    const ref =
+      reference ?? (this.isProduction ? '1751211408284' : 'T998698517224693')
 
-export async function verifyPayment(env: Env, reference?: string) {
-  let ref = env.WRANGLER_ENVIRONMENT !== 'production' ? 'T998698517224693' : '1751211408284'
-  const response = await fetch(
-    `https://api.paystack.co/transaction/verify/${reference ?? ref}`,
-    {
+    const result = await this.request<unknown>(`/transaction/verify/${ref}`, {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    },
-  )
+    })
 
-  if (!response.ok) {
-    const error: Error = await response.json()
-    throw new Error(`Failed to initiate transfer: ${error.message}`)
+    return verifyTransactionRes.parse(result)
   }
 
-  return verifyTransactionRes.parse(await response.json())
-}
+  async fetchTransferStatus(transferCode?: string, reference?: string) {
+    const url = transferCode
+      ? `/transfer/${transferCode}`
+      : `/transfer/verify/${reference}`
 
-export async function fetchPaystackTransferStatus(
-  env: Env,
-  transferCode?: string,
-  reference?: string,
-): Promise<any> {
-  const url = transferCode
-    ? `https://api.paystack.co/transfer/${transferCode}`
-    : `https://api.paystack.co/transfer/verify/${reference}`
-
-  try {
-    // Try fetching by transfer code first
-    const response = await fetch(
-      url,
-      {
+    try {
+      const result = await this.request<{
+        data: { status: string; failure_reason: string }
+      }>(url, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    )
+      })
 
-    if (!response.ok) {
-      const errorData: Error = await response.json()
-      console.log(errorData.message || 'Failed to fetch transfer status')
+      return result.data
+    } catch (error) {
+      console.error('Error fetching Paystack transfer status:', error)
       return null
     }
-
-    const result: { data: unknown } = await response.json()
-    return result.data
-  } catch (error) {
-    console.error('Error fetching Paystack transfer status:', error)
-    throw error
   }
-}
 
-/**
- * Fetch bulk transfer status from Paystack by batch code
- */
-export async function fetchPaystackBulkTransferStatus(
-  batchCode: string,
-  env: Env,
-): Promise<any> {
-  try {
-    const response = await fetch(
-      `https://api.paystack.co/transfer/bulk/${batchCode}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
+  async fetchBulkTransferStatus(batchCode: string) {
+    try {
+      const result = await this.request<{ data: unknown }>(
+        `/transfer/bulk/${batchCode}`,
+        {
+          method: 'GET',
         },
-      },
-    )
+      )
 
-    if (!response.ok) {
-      const errorData: Error = await response.json()
-      throw new Error(errorData.message || 'Failed to fetch bulk transfer status')
+      return result.data
+    } catch (error) {
+      console.error('Error fetching Paystack bulk transfer status:', error)
+      throw error
     }
-
-    const result: { data: unknown } = await response.json()
-    return result.data
-  } catch (error) {
-    console.error('Error fetching Paystack bulk transfer status:', error)
-    throw error
   }
 }

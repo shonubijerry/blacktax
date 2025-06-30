@@ -1,8 +1,8 @@
-import { OpenAPIRoute } from "chanfana"
-import { AppContext } from "../../types"
-import { getPrismaClient, mapPaystackStatusToLocal } from "../../helper"
-import { $Enums } from "../../generated/prisma"
-import { fetchPaystackTransferStatus } from "../../paystack/paystack"
+import { OpenAPIRoute } from 'chanfana'
+import { $Enums } from '../../generated/prisma'
+import { getPrismaClient, mapPaystackStatusToLocal } from '../../helper'
+import { PaystackClient } from '../../paystack/paystack'
+import { AppContext } from '../../types'
 
 export class UpdateTransferStatusCron extends OpenAPIRoute {
   schema = {
@@ -60,38 +60,48 @@ export class UpdateTransferStatusCron extends OpenAPIRoute {
           // Process each recipient
           for (const recipient of transfer.recipients) {
             try {
-              let paystackStatus = null
+              let paystackStatus: Awaited<
+                ReturnType<(typeof paystack)['fetchTransferStatus']>
+              > = null
 
               // Fetch status from Paystack
+              const paystack = new PaystackClient(c.env)
               if (recipient.paystackTransferCode) {
-                paystackStatus = await fetchPaystackTransferStatus(
-                  c.env,
+                paystackStatus = await paystack.fetchTransferStatus(
                   recipient.paystackTransferCode,
                 )
               } else if (recipient.paystackReference) {
                 // Fallback: try to get status by reference
-                paystackStatus = await fetchPaystackTransferStatus(
-                  c.env,
+                paystackStatus = await paystack.fetchTransferStatus(
                   null,
                   recipient.paystackReference,
                 )
               }
 
               if (paystackStatus) {
-                const newStatus = mapPaystackStatusToLocal(paystackStatus.status)
+                const newStatus = mapPaystackStatusToLocal(
+                  paystackStatus.status,
+                )
 
                 if (newStatus !== recipient.status) {
                   recipientUpdates.push({
                     id: recipient.id,
                     status: newStatus,
-                    transferredAt: newStatus === 'SUCCESS' ? new Date() : undefined,
-                    failureReason: newStatus === 'FAILED' ? paystackStatus.failure_reason : undefined,
+                    transferredAt:
+                      newStatus === 'SUCCESS' ? new Date() : undefined,
+                    failureReason:
+                      newStatus === 'FAILED'
+                        ? paystackStatus.failure_reason
+                        : undefined,
                   })
                   hasUpdates = true
                 }
               }
             } catch (error) {
-              console.error(`Error fetching status for recipient ${recipient.id}:`, error)
+              console.error(
+                `Error fetching status for recipient ${recipient.id}:`,
+                error,
+              )
               errorCount++
             }
           }
@@ -150,7 +160,9 @@ export class UpdateTransferStatusCron extends OpenAPIRoute {
         }
       }
 
-      console.log(`Cron job completed. Updated: ${updatedCount}, Errors: ${errorCount}`)
+      console.log(
+        `Cron job completed. Updated: ${updatedCount}, Errors: ${errorCount}`,
+      )
 
       return c.json({
         success: true,

@@ -2,7 +2,7 @@
 
 I got sick of remittance to family in Africa one by one. 
 
-I put this together quickly to help me send money to everyone with as few clicks as possible.
+Put this together quickly to help me send money to everyone with as few clicks as possible.
 
 ### Disclaimer
 

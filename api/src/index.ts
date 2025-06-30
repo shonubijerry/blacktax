@@ -10,6 +10,9 @@ import { ListBanks } from './endpoints/transfer/banks'
 import { TransferMoney } from './endpoints/transfer/do'
 import { GetTransfers } from './endpoints/transfer/list'
 import { AppContext } from './types'
+import { handleScheduledEvent } from './crons/schedule'
+import { UpdateBulkTransferStatusCron } from './endpoints/cron/status_bulk'
+import { UpdateTransferStatusCron } from './endpoints/cron/status'
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>()
@@ -57,9 +60,18 @@ openapi.delete('/family-members/:id', DeleteFamilyMember)
 openapi.post('/transfer', TransferMoney)
 openapi.get('/transfers', GetTransfers)
 openapi.get('/banks', ListBanks)
+openapi.get('/cron/transfer/status', UpdateTransferStatusCron)
+openapi.get('/cron/transfer/status/bulk', UpdateBulkTransferStatusCron)
 
 // You may also register routes for non OpenAPI directly on Hono
 // app.get('/test', (c) => c.text('Hono!'))
 
-// Export the Hono app
-export default app
+
+// Export the Hono app as the default handler for HTTP requests
+// And export a separate handler for scheduled events
+export default {
+  fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    await handleScheduledEvent(event, env, ctx);
+  },
+};

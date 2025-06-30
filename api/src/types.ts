@@ -60,6 +60,17 @@ export const paystackTransferRes = z
   })
   .transform((value) => value.data)
 
+export const paystackBulkTransferRes = z
+  .object({
+    status: z.boolean(),
+    data: z.object({
+      status: z.string(),
+      reference: z.string(),
+      transfer_code: z.string(),
+    }).array(),
+  })
+  .transform((value) => value.data)
+
 export const verifyTransactionRes = z
   .object({
     status: z.boolean(),

@@ -3,7 +3,7 @@ import { $Enums, FamilyMember, TransferRecipient } from '../../generated/prisma'
 import { generateReference, getPrismaClient, reqJson } from '../../helper'
 import {
   createPaystackRecipient,
-  initiatePaystackTransfer,
+  initiateBulkPaystackTransfer,
   verifyPayment,
 } from '../../paystack/paystack'
 import { AppContext, TransferRequestSchema } from '../../types'
@@ -11,12 +11,12 @@ import { AppContext, TransferRequestSchema } from '../../types'
 export class TransferMoney extends OpenAPIRoute {
   schema = {
     tags: ['Transfers'],
-    summary: 'Transfer money to family members via Paystack',
+    summary: 'Transfer money to family members via Paystack bulk transfer',
     request: {
       body: reqJson(TransferRequestSchema),
     },
     responses: {
-      '200': { description: 'Transfer initiated successfully' },
+      '200': { description: 'Bulk transfer initiated successfully' },
       '400': { description: 'Invalid request data' },
     },
   }
@@ -69,17 +69,13 @@ export class TransferMoney extends OpenAPIRoute {
         throw new Error('Some recipients not found or inactive')
       }
 
+      // Step 3: Prepare recipients and ensure they have Paystack recipient codes
+      const bulkTransferData = []
       const transferRecipients: (TransferRecipient & {
         recipient: FamilyMember
-        paystack?: {
-          reference?: string
-          status?: string
-          transfer_code?: string
-        }
         error?: string
       })[] = []
 
-      // Step 3: Process each recipient (outside transaction)
       for (const [index, recipient] of recipients.entries()) {
         const amount = recipientAmountMap.get(recipient.id)
         const uniqueReference = `${reference}_${index + 1}`
@@ -91,41 +87,38 @@ export class TransferMoney extends OpenAPIRoute {
           if (!recipientCode) {
             recipientCode = await createPaystackRecipient(recipient, c.env)
 
-            // Update blacktax recipient with Paystack recipient code
+            // Update recipient with Paystack recipient code
             await prisma.familyMember.update({
               where: { id: recipient.id },
               data: { paystackRecipientCode: recipientCode },
             })
           }
 
-          // Call Paystack to initiate transfer
-          const transferResult = await initiatePaystackTransfer(
-            recipientCode,
-            amount,
-            uniqueReference,
-            c.env,
-          )
+          // Prepare data for bulk transfer
+          bulkTransferData.push({
+            amount: amount * 100, // Convert to kobo
+            recipient: recipientCode,
+            reference: uniqueReference,
+            reason: transferData.description || 'Family transfer',
+          })
 
-          // Create transferRecipient in DB
+          // Create transferRecipient in DB with PENDING status
           const transferRecipient = await prisma.transferRecipient.create({
             data: {
               transferId: transfer.id,
               recipientId: recipient.id,
               amount,
-              status:
-                transferResult.status === 'success' ? 'SUCCESS' : 'PENDING',
-              paystackTransferCode: transferResult.transfer_code,
-              paystackReference: transferResult.reference,
+              status: 'PENDING',
+              paystackReference: uniqueReference,
             },
           })
 
           transferRecipients.push({
             ...transferRecipient,
             recipient,
-            paystack: transferResult,
           })
         } catch (error) {
-          console.error(`Transfer failed for recipient ${recipient.id}:`, error)
+          console.error(`Failed to prepare recipient ${recipient.id}:`, error)
 
           const failedRecipient = await prisma.transferRecipient.create({
             data: {
@@ -145,7 +138,63 @@ export class TransferMoney extends OpenAPIRoute {
         }
       }
 
-      // Step 4: Calculate overall status
+      // Step 4: Initiate bulk transfer if we have valid recipients
+      const validTransfers = bulkTransferData.filter(Boolean)
+      let bulkTransferResult: Awaited<ReturnType<typeof initiateBulkPaystackTransfer>> = null
+
+      if (validTransfers.length > 0) {
+        try {
+          bulkTransferResult = await initiateBulkPaystackTransfer(
+            c.env,
+            validTransfers
+          )
+
+          // Update transfer recipients with bulk transfer results
+          if (bulkTransferResult && bulkTransferResult.length > 0) {
+            for (const [index, result] of bulkTransferResult.entries()) {
+              const transferRecipient = transferRecipients.find(
+                (tr) => tr.paystackReference === result.reference,
+              )
+
+              if (transferRecipient) {
+                await prisma.transferRecipient.update({
+                  where: { id: transferRecipient.id },
+                  data: {
+                    status: result.status === 'success' ? 'SUCCESS' : 'PENDING',
+                    paystackTransferCode: result.transfer_code,
+                  },
+                })
+
+                // Update local object for response
+                transferRecipient.status = result.status === 'success' ? 'SUCCESS' : 'PENDING'
+                transferRecipient.paystackTransferCode = result.transfer_code
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Bulk transfer failed:', error)
+
+          // Mark all pending transfers as failed
+          const pendingRecipients = transferRecipients.filter(
+            (r) => r.status === 'PENDING',
+          )
+
+          for (const recipient of pendingRecipients) {
+            await prisma.transferRecipient.update({
+              where: { id: recipient.id },
+              data: {
+                status: 'FAILED',
+                failureReason: (error as Error).message,
+              },
+            })
+
+            recipient.status = 'FAILED'
+            recipient.error = (error as Error).message
+          }
+        }
+      }
+
+      // Step 5: Calculate overall status
       const statusCounts = transferRecipients.reduce(
         (acc, r) => {
           acc[r.status] = (acc[r.status] || 0) + 1
@@ -175,6 +224,7 @@ export class TransferMoney extends OpenAPIRoute {
             ...updatedTransfer,
             createdAt: updatedTransfer.createdAt.toISOString(),
             updatedAt: updatedTransfer.updatedAt.toISOString(),
+            bulkTransferCode: reference || null,
             recipients: transferRecipients.map((r) => ({
               ...r,
               createdAt: r.createdAt?.toISOString?.() || '',
@@ -186,7 +236,7 @@ export class TransferMoney extends OpenAPIRoute {
         200,
       )
     } catch (error) {
-      console.error('Error processing transfer:', error)
+      console.error('Error processing bulk transfer:', error)
       return c.json({ success: false, error: (error as Error).message }, 500)
     } finally {
       await prisma.$disconnect()

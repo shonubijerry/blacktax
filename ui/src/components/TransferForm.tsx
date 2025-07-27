@@ -411,7 +411,7 @@ export default function TransferForm({
                               )
                             }
                           >
-                            {member.name} ({member.email})
+                            {member.name} ({member.bankName} {member.accountNumber})
                           </option>
                         ))}
                       </select>

@@ -1,21 +1,21 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { FamilyMember, TransferRequest, blackTaxApi } from "@/lib/api";
+import { FamilyMember, TransferRequest, blackTaxApi } from '@/lib/api'
+import { useEffect, useState } from 'react'
 
 interface TransferFormProps {
-  onSubmit: (data: TransferRequest) => Promise<void>;
-  onCancel: () => void;
-  isLoading: boolean;
+  onSubmit: (data: TransferRequest) => Promise<void>
+  onCancel: () => void
+  isLoading: boolean
 }
 
 declare global {
   interface Window {
     PaystackPop: {
       new (): {
-        newTransaction: (options: object) => void;
-      };
-    };
+        newTransaction: (options: object) => void
+      }
+    }
   }
 }
 
@@ -24,220 +24,220 @@ export default function TransferForm({
   onCancel,
   isLoading,
 }: TransferFormProps) {
-  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [members, setMembers] = useState<FamilyMember[]>([])
   const [recipients, setRecipients] = useState<
     Array<{ id: string; amount: number }>
-  >([{ id: "", amount: 0 }]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loadingMembers, setLoadingMembers] = useState(true);
-  const [paystackLoaded, setPaystackLoaded] = useState(false);
-  const [processingPayment, setProcessingPayment] = useState(false);
+  >([{ id: '', amount: 0 }])
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [loadingMembers, setLoadingMembers] = useState(true)
+  const [paystackLoaded, setPaystackLoaded] = useState(false)
+  const [processingPayment, setProcessingPayment] = useState(false)
 
   let bypassPayment = false
 
   useEffect(() => {
-    loadMembers();
-    loadPaystackScript();
-  }, []);
+    loadMembers()
+    loadPaystackScript()
+  }, [])
 
   // Load Paystack script
   const loadPaystackScript = () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return
 
     // Check if script already exists
     const existingScript = document.querySelector(
-      'script[src="https://js.paystack.co/v2/inline.js"]'
-    );
+      'script[src="https://js.paystack.co/v2/inline.js"]',
+    )
     if (existingScript) {
-      setPaystackLoaded(true);
-      return;
+      setPaystackLoaded(true)
+      return
     }
 
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v2/inline.js";
-    script.onload = () => setPaystackLoaded(true);
+    const script = document.createElement('script')
+    script.src = 'https://js.paystack.co/v2/inline.js'
+    script.onload = () => setPaystackLoaded(true)
     script.onerror = () => {
-      console.error("Failed to load Paystack script");
+      console.error('Failed to load Paystack script')
       setErrors({
-        general: "Payment system failed to load. Please refresh the page.",
-      });
-    };
-    document.head.appendChild(script);
-  };
+        general: 'Payment system failed to load. Please refresh the page.',
+      })
+    }
+    document.head.appendChild(script)
+  }
 
   const loadMembers = async () => {
     try {
-      setLoadingMembers(true);
-      const response = await blackTaxApi.getMembers();
-      setMembers(response.data);
+      setLoadingMembers(true)
+      const response = await blackTaxApi.getMembers()
+      setMembers(response.data)
     } catch (error) {
-      console.error("Failed to load members:", error);
+      console.error('Failed to load members:', error)
       setErrors({
-        general: "Failed to load family members. Please try again.",
-      });
+        general: 'Failed to load family members. Please try again.',
+      })
     } finally {
-      setLoadingMembers(false);
+      setLoadingMembers(false)
     }
-  };
+  }
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {}
 
     if (!recipients.length) {
-      newErrors.recipients = "At least one recipient is required";
-      setErrors(newErrors);
-      return false;
+      newErrors.recipients = 'At least one recipient is required'
+      setErrors(newErrors)
+      return false
     }
 
-    const validRecipients = recipients.every((r) => r.id && r.amount >= 100);
+    const validRecipients = recipients.every((r) => r.id && r.amount >= 100)
     if (!validRecipients) {
-      newErrors.recipients = "All recipients must have amount ≥ ₦100";
-      setErrors(newErrors);
-      return false;
+      newErrors.recipients = 'All recipients must have amount ≥ ₦100'
+      setErrors(newErrors)
+      return false
     }
 
     // Check for duplicate recipients
-    const recipientIds = recipients.map((r) => r.id).filter(Boolean);
-    const uniqueIds = new Set(recipientIds);
+    const recipientIds = recipients.map((r) => r.id).filter(Boolean)
+    const uniqueIds = new Set(recipientIds)
     if (recipientIds.length !== uniqueIds.size) {
-      newErrors.recipients = "Duplicate recipients are not allowed";
-      setErrors(newErrors);
-      return false;
+      newErrors.recipients = 'Duplicate recipients are not allowed'
+      setErrors(newErrors)
+      return false
     }
 
-    setErrors({});
-    return true;
-  };
+    setErrors({})
+    return true
+  }
 
   const addRecipient = () => {
-    setRecipients([...recipients, { id: "", amount: 0 }]);
-  };
+    setRecipients([...recipients, { id: '', amount: 0 }])
+  }
 
   const removeRecipient = (index: number) => {
-    setRecipients(recipients.filter((_, i) => i !== index));
-  };
+    setRecipients(recipients.filter((_, i) => i !== index))
+  }
 
   const getSelectedMember = (recipientId: string): FamilyMember | undefined => {
-    return members.find((member) => member.id === recipientId);
-  };
+    return members.find((member) => member.id === recipientId)
+  }
 
   const updateRecipient = (
     index: number,
-    field: "id" | "amount",
-    value: string | number
+    field: 'id' | 'amount',
+    value: string | number,
   ) => {
-    const updated = [...recipients];
-    let amount = 0;
-    if (field === "id") {
-      amount = getSelectedMember(value as string)?.balance ?? 0;
+    const updated = [...recipients]
+    let amount = 0
+    if (field === 'id') {
+      amount = getSelectedMember(value as string)?.balance ?? 0
     }
     updated[index] = {
       ...updated[index],
       [field]: value,
       ...(amount && { amount }),
-    };
-    setRecipients(updated);
+    }
+    setRecipients(updated)
 
     // Clear errors when user makes changes
     if (errors.recipients) {
-      setErrors({ ...errors, recipients: "" });
+      setErrors({ ...errors, recipients: '' })
     }
-  };
+  }
 
   const getTotalAmount = () => {
     return recipients.reduce(
       (sum, recipient) => sum + (recipient.amount || 0),
-      0
-    );
-  };
+      0,
+    )
+  }
 
   // Handle successful payment
   async function handlePaymentSuccess({ reference }: { reference: string }) {
-    console.log("Payment successful:", reference);
-    setProcessingPayment(true);
+    console.log('Payment successful:', reference)
+    setProcessingPayment(true)
 
     try {
       const transferRequest: TransferRequest = {
         recipients: recipients.filter((r) => r.id && r.amount > 0),
         reference,
-      };
+      }
 
-      await handleSubmit(transferRequest);
+      await handleSubmit(transferRequest)
     } catch (error) {
-      console.error("Transfer failed after payment:", error);
+      console.error('Transfer failed after payment:', error)
       setErrors({
         general:
-          "Transfer failed after payment. Please contact support with reference: " +
+          'Transfer failed after payment. Please contact support with reference: ' +
           reference,
-      });
+      })
     } finally {
-      setProcessingPayment(false);
+      setProcessingPayment(false)
     }
   }
 
   // Handle payment close/cancel
   const handlePaymentClose = () => {
-    console.log("Payment dialog closed");
-    setProcessingPayment(false);
-  };
+    console.log('Payment dialog closed')
+    setProcessingPayment(false)
+  }
 
   // Initialize Paystack payment
   const initializePayment = () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return
 
     if (!paystackLoaded || !window.PaystackPop) {
       setErrors({
         general:
-          "Payment system is still loading. Please try again in a moment.",
-      });
-      return;
+          'Payment system is still loading. Please try again in a moment.',
+      })
+      return
     }
 
     if (!validateForm()) {
-      return;
+      return
     }
 
-    setProcessingPayment(true);
-    setErrors({});
+    setProcessingPayment(true)
+    setErrors({})
 
-    const paystack = new window.PaystackPop();
+    const paystack = new window.PaystackPop()
     paystack.newTransaction({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "",
-      email: "shonubijerry@gmail.com", // Replace with actual user email from your auth system
+      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? '',
+      email: 'shonubijerry@gmail.com', // Replace with actual user email from your auth system
       amount: getTotalAmount() * 100, // Amount in kobo
-      currency: "NGN",
+      currency: 'NGN',
       reference: new Date().getTime().toString(),
       metadata: {
         custom_fields: [
           {
-            display_name: "recipientIds",
-            variable_name: "recipients",
+            display_name: 'recipientIds',
+            variable_name: 'recipients',
             value: JSON.stringify(
-              recipients.filter((r) => r.id && r.amount > 100).map((r) => r.id)
+              recipients.filter((r) => r.id && r.amount > 100).map((r) => r.id),
             ),
           },
           {
-            display_name: "totalAmount",
-            variable_name: "totalAmount",
+            display_name: 'totalAmount',
+            variable_name: 'totalAmount',
             value: getTotalAmount(),
           },
         ],
       },
       onSuccess: handlePaymentSuccess,
       onCancel: handlePaymentClose,
-    });
-  };
+    })
+  }
 
   // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    const isValidRecipients = recipients.every((r) => r.id && r.amount > 100);
+    const isValidRecipients = recipients.every((r) => r.id && r.amount > 100)
 
     if (!isValidRecipients) {
       setErrors({
-        general: "All recipients must have minimum amount of ₦100",
-      });
+        general: 'All recipients must have minimum amount of ₦100',
+      })
     }
 
     bypassPayment = true
@@ -245,19 +245,19 @@ export default function TransferForm({
     if (bypassPayment) {
       const transferRequest: TransferRequest = {
         recipients: recipients.filter((r) => r.id && r.amount >= 100),
-      };
+      }
 
-      await handleSubmit(transferRequest);
-      
+      await handleSubmit(transferRequest)
+
       return
     }
 
-    initializePayment();
-  };
+    initializePayment()
+  }
 
   const isFormDisabled = () => {
-    return isLoading || loadingMembers || processingPayment;
-  };
+    return isLoading || loadingMembers || processingPayment
+  }
 
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden">
@@ -391,15 +391,15 @@ export default function TransferForm({
                       <select
                         value={recipient.id}
                         onChange={(e) =>
-                          updateRecipient(index, "id", e.target.value)
+                          updateRecipient(index, 'id', e.target.value)
                         }
                         disabled={loadingMembers || isFormDisabled()}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer disabled:opacity-50"
                       >
                         <option value="">
                           {loadingMembers
-                            ? "Loading members..."
-                            : "Select recipient..."}
+                            ? 'Loading members...'
+                            : 'Select recipient...'}
                         </option>
                         {members.map((member) => (
                           <option
@@ -407,11 +407,12 @@ export default function TransferForm({
                             value={member.id}
                             disabled={
                               !!recipients.find(
-                                (r, i) => r.id === member.id && i !== index
+                                (r, i) => r.id === member.id && i !== index,
                               )
                             }
                           >
-                            {member.name} ({member.bankName} {member.accountNumber})
+                            {member.name} ({member.bankName}{' '}
+                            {member.accountNumber})
                           </option>
                         ))}
                       </select>
@@ -468,12 +469,12 @@ export default function TransferForm({
                         placeholder="0.00"
                         min="100"
                         step="100"
-                        value={recipient.amount || ""}
+                        value={recipient.amount || ''}
                         onChange={(e) =>
                           updateRecipient(
                             index,
-                            "amount",
-                            parseFloat(e.target.value) || 0
+                            'amount',
+                            parseFloat(e.target.value) || 0,
                           )
                         }
                         disabled={isFormDisabled()}
@@ -619,5 +620,5 @@ export default function TransferForm({
         </div>
       </form>
     </div>
-  );
+  )
 }

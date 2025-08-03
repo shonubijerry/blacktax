@@ -2,4 +2,4 @@
 .wrangler
 
 node_modules
-api/.local_db
+.local_db

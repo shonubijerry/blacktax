@@ -1,182 +1,182 @@
-"use client";
+'use client'
 
-import { redirect } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import FamilyMemberForm from '@/components/FamilyMemberForm'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import MembersView from '@/components/MembersView'
+import TransferForm from '@/components/TransferForm'
+import TransfersView from '@/components/TransfersView'
 import {
-  FamilyMember,
-  Transfer,
   blackTaxApi,
   CreateFamilyMemberData,
-  UpdateFamilyMemberData,
+  FamilyMember,
+  Transfer,
   TransferRequest,
-} from "@/lib/api";
-import FamilyMemberForm from "@/components/FamilyMemberForm";
-import TransferForm from "@/components/TransferForm";
-import MembersView from "@/components/MembersView";
-import TransfersView from "@/components/TransfersView";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { useSession } from "next-auth/react";
+  UpdateFamilyMemberData,
+} from '@/lib/api'
+import { signOut, useSession } from 'next-auth/react'
+import { redirect } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
 
 type View =
-  | "members"
-  | "transfers"
-  | "add-member"
-  | "edit-member"
-  | "new-transfer";
+  | 'members'
+  | 'transfers'
+  | 'add-member'
+  | 'edit-member'
+  | 'new-transfer'
 
 export default function Home() {
-  const { data: session, status } = useSession();
-  const [currentView, setCurrentView] = useState<View>("members");
-  const [members, setMembers] = useState<FamilyMember[]>([]);
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const { data: session, status } = useSession()
+  const [currentView, setCurrentView] = useState<View>('members')
+  const [members, setMembers] = useState<FamilyMember[]>([])
+  const [transfers, setTransfers] = useState<Transfer[]>([])
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+    null,
+  )
+  const [isLoading, setIsLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const loadMembers = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const response = await blackTaxApi.getMembers({ search: searchTerm });
-      setMembers(response.data);
+      setIsLoading(true)
+      const response = await blackTaxApi.getMembers({ search: searchTerm })
+      setMembers(response.data)
     } catch (error) {
-      console.error("Failed to load members:", error);
+      console.error('Failed to load members:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [searchTerm]);
+  }, [searchTerm])
 
   useEffect(() => {
-    if (currentView === "members") {
-      loadMembers();
-    } else if (currentView === "transfers") {
-      loadTransfers();
+    if (currentView === 'members') {
+      loadMembers()
+    } else if (currentView === 'transfers') {
+      loadTransfers()
     }
-  }, [currentView, loadMembers]);
+  }, [currentView, loadMembers])
 
-  if (status === "loading") {
-    return <LoadingSpinner />;
+  if (status === 'loading') {
+    return <LoadingSpinner />
   }
 
   if (!session) {
-    redirect("/login");
+    redirect('/login')
   }
 
   const loadTransfers = async () => {
     try {
-      setIsLoading(true);
-      const response = await blackTaxApi.getTransfers();
-      setTransfers(response.data);
+      setIsLoading(true)
+      const response = await blackTaxApi.getTransfers()
+      setTransfers(response.data)
     } catch (error) {
-      console.error("Failed to load transfers:", error);
+      console.error('Failed to load transfers:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleCreateMember = async (data: CreateFamilyMemberData) => {
-    await blackTaxApi.createMember(data);
-    setCurrentView("members");
-    loadMembers();
-  };
+    await blackTaxApi.createMember(data)
+    setCurrentView('members')
+    loadMembers()
+  }
 
   const handleUpdateMember = async (data: UpdateFamilyMemberData) => {
     if (selectedMember) {
-      await blackTaxApi.updateMember(selectedMember.id, data);
-      setCurrentView("members");
-      setSelectedMember(null);
-      loadMembers();
+      await blackTaxApi.updateMember(selectedMember.id, data)
+      setCurrentView('members')
+      setSelectedMember(null)
+      loadMembers()
     }
-  };
+  }
 
   const handleDeleteMember = async (id: string) => {
-    if (confirm("Are you sure you want to delete this member?")) {
-      await blackTaxApi.deleteMember(id);
-      loadMembers();
+    if (confirm('Are you sure you want to delete this member?')) {
+      await blackTaxApi.deleteMember(id)
+      loadMembers()
     }
-  };
+  }
 
   const handleCreateTransfer = async (data: TransferRequest) => {
-    await blackTaxApi.createTransfer(data);
-    setCurrentView("transfers");
-    loadTransfers();
-  };
+    await blackTaxApi.createTransfer(data)
+    setCurrentView('transfers')
+    loadTransfers()
+  }
 
   const handleEditMember = (member: FamilyMember) => {
-    setSelectedMember(member);
-    setCurrentView("edit-member");
-  };
+    setSelectedMember(member)
+    setCurrentView('edit-member')
+  }
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingSpinner />;
+      return <LoadingSpinner />
     }
 
     switch (currentView) {
-      case "members":
+      case 'members':
         return (
           <MembersView
             members={members}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             onSearch={loadMembers}
-            onAddMember={() => setCurrentView("add-member")}
-            onNewTransfer={() => setCurrentView("new-transfer")}
+            onAddMember={() => setCurrentView('add-member')}
+            onNewTransfer={() => setCurrentView('new-transfer')}
             onEditMember={handleEditMember}
             onDeleteMember={handleDeleteMember}
           />
-        );
+        )
 
-      case "transfers":
+      case 'transfers':
         return (
           <TransfersView
             transfers={transfers}
-            onNewTransfer={() => setCurrentView("new-transfer")}
+            onNewTransfer={() => setCurrentView('new-transfer')}
           />
-        );
+        )
 
-      case "add-member":
+      case 'add-member':
         return (
           <div>
             <FamilyMemberForm
               onSubmit={handleCreateMember}
-              onCancel={() => setCurrentView("members")}
+              onCancel={() => setCurrentView('members')}
               isLoading={isLoading}
             />
           </div>
-        );
+        )
 
-      case "edit-member":
+      case 'edit-member':
         return selectedMember ? (
           <div>
             <FamilyMemberForm
               initialData={selectedMember}
               onSubmit={handleUpdateMember}
               onCancel={() => {
-                setCurrentView("members");
-                setSelectedMember(null);
+                setCurrentView('members')
+                setSelectedMember(null)
               }}
               isLoading={isLoading}
             />
           </div>
-        ) : null;
+        ) : null
 
-      case "new-transfer":
+      case 'new-transfer':
         return (
           <div>
             <TransferForm
               onSubmit={handleCreateTransfer}
-              onCancel={() => setCurrentView("members")}
+              onCancel={() => setCurrentView('members')}
               isLoading={isLoading}
             />
           </div>
-        );
+        )
 
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -188,24 +188,30 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-gray-900">Blacktax</h1>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setCurrentView("members")}
+                  onClick={() => setCurrentView('members')}
                   className={`px-4 py-2 text-sm font-medium rounded-md ${
-                    currentView === "members"
-                      ? "bg-blue-600 text-white"
-                      : "text-blue-600 bg-blue-50 hover:bg-blue-100"
+                    currentView === 'members'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
                   }`}
                 >
                   Members
                 </button>
                 <button
-                  onClick={() => setCurrentView("transfers")}
+                  onClick={() => setCurrentView('transfers')}
                   className={`px-4 py-2 text-sm font-medium rounded-md ${
-                    currentView === "transfers"
-                      ? "bg-blue-600 text-white"
-                      : "text-blue-600 bg-blue-50 hover:bg-blue-100"
+                    currentView === 'transfers'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
                   }`}
                 >
                   Transfers
+                </button>
+                <button
+                  onClick={() => signOut()}
+                  className={`px-4 py-2 text-sm font-medium rounded-md text-red-600 bg-red-50 hover:bg-blue-100`}
+                >
+                  Logout
                 </button>
               </div>
             </div>
@@ -216,5 +222,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,82 +1,92 @@
 export interface FamilyMember {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  accountNumber: string;
-  bankCode: string;
-  bankName?: string | null;
-  balance: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  name: string
+  email: string
+  phone: string
+  accountNumber: string
+  bankCode: string
+  bankName?: string | null
+  balance: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface CreateFamilyMemberData {
-  name?: string;
-  email?: string;
-  phone?: string;
-  accountNumber?: string;
-  bankCode?: string;
-  bankName?: string | null;
-  balance?: number;
+  name?: string
+  email?: string
+  phone?: string
+  accountNumber?: string
+  bankCode?: string
+  bankName?: string | null
+  balance?: number
 }
 
-export interface UpdateFamilyMemberData extends Partial<CreateFamilyMemberData> {
-  paystackRecipientCode?: string;
+export interface UpdateFamilyMemberData
+  extends Partial<CreateFamilyMemberData> {
+  paystackRecipientCode?: string
 }
 
 export interface TransferRequest {
   recipients: Array<{
-    id: string;
-    amount: number;
-  }>;
-  reference?: string;
-  callbackUrl?: string;
-  description?: string;
+    id: string
+    amount: number
+  }>
+  reference?: string
+  callbackUrl?: string
+  description?: string
 }
 
 export interface Transfer {
-  id: string;
-  reference: string;
-  status: string;
-  totalAmount: number;
-  description?: string;
-  currency?: string;
-  paystackBatchId: string;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  reference: string
+  status: string
+  totalAmount: number
+  description?: string
+  currency?: string
+  paystackBatchId: string
+  createdAt: string
+  updatedAt: string
   recipients: Array<{
-    id: string;
-    amount: number;
-    status: string;
-    paystackReference: string;
-    transferredAt: string;
-    failureReason: string;
+    id: string
+    amount: number
+    status: string
+    paystackReference: string
+    transferredAt: string
+    failureReason: string
     recipient: {
       id: string
-      name: string;
-      email: string;
+      name: string
+      email: string
     }
-  }>;
+  }>
 }
 
 export interface Bank {
-  name: string;
-  code: string;
+  name: string
+  code: string
 }
 
-interface Pagination { page?: number; limit?: number; }
+interface Pagination {
+  page?: number
+  limit?: number
+}
 
 class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'ApiError'
   }
 }
 
-async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -86,27 +96,28 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   })
 
   if (!response.ok) {
-    const errorData = await response.text().catch((error) => error.message);
-    throw new ApiError(response.status, errorData || `HTTP ${response.status}`);
+    const errorData = await response.text().catch((error) => error.message)
+    throw new ApiError(response.status, errorData || `HTTP ${response.status}`)
   }
 
-  return response.json();
+  return response.json()
 }
 
 export const blackTaxApi = {
   // Family Members
   getMembers: (params?: { page?: number; limit?: number; search?: string }) => {
-    const searchParams = new URLSearchParams();
+    const searchParams = new URLSearchParams()
     searchParams.append('page', (params?.page ?? 1).toString())
     searchParams.append('limit', (params?.limit ?? 20).toString())
-    if (params?.search) searchParams.append('search', params.search);
+    if (params?.search) searchParams.append('search', params.search)
 
-    const query = searchParams.toString();
-    return apiRequest<{ data: FamilyMember[]; pagination: Pagination }>(`/family-members${query ? `?${query}` : ''}`);
+    const query = searchParams.toString()
+    return apiRequest<{ data: FamilyMember[]; pagination: Pagination }>(
+      `/family-members${query ? `?${query}` : ''}`,
+    )
   },
 
-  getMember: (id: string) =>
-    apiRequest<FamilyMember>(`/family-members/${id}`),
+  getMember: (id: string) => apiRequest<FamilyMember>(`/family-members/${id}`),
 
   createMember: (data: CreateFamilyMemberData) =>
     apiRequest<FamilyMember>('/family-members', {
@@ -127,14 +138,15 @@ export const blackTaxApi = {
 
   // Transfers
   createTransfer: (data: TransferRequest) =>
-    apiRequest<{ status: string; reference: string; transfer_code: string }>('/transfer', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    apiRequest<{ status: string; reference: string; transfer_code: string }>(
+      '/transfer',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    ),
 
-  getTransfers: () =>
-    apiRequest<{ data: Transfer[] }>('/transfers'),
+  getTransfers: () => apiRequest<{ data: Transfer[] }>('/transfers'),
 
-  getBanks: () =>
-    apiRequest<{ data: Bank[] }>('/banks'),
-};
+  getBanks: () => apiRequest<{ data: Bank[] }>('/banks'),
+}

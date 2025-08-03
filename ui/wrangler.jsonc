@@ -6,10 +6,11 @@
 	"$schema": "../node_modules/wrangler/config-schema.json",
 	"name": "blacktax",
 	"main": ".open-next/worker.js",
-	"compatibility_date": "2025-03-01",
+	"compatibility_date": "2025-08-01",
 	"compatibility_flags": [
 		"nodejs_compat",
-		"global_fetch_strictly_public"
+		"global_fetch_strictly_public",
+		"enable_nodejs_http_modules"
 	],
 	"assets": {
 		"binding": "ASSETS",
@@ -25,7 +26,11 @@
 			"vars": {
 				"NEXTJS_ENV": "production",
 				"NEXT_PUBLIC_API_URL": "https://blacktax_api-production.koredujar.workers.dev",
-				"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_live_3c8fffec7f9051ead15d74a7ee980ba375754a2a"
+				"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_live_3c8fffec7f9051ead15d74a7ee980ba375754a2a",
+				"NEXTAUTH_URL": "https://blacktax.koredujar.workers.dev/",
+				"NEXTAUTH_SECRET": "am7w7mBtYDGjyxf2YJ2tocxEkTZr8ogumV2akjQuyt",
+				"ZOHO_CLIENT_ID": "1000.TU0RF1IDTETJVB0Z3Q6SK66FSOPBPJ",
+				"ZOHO_CLIENT_SECRET": "56348e599df8d5c4c372af162b5baaeafdefc0d651",
 			},
 		}
 	},

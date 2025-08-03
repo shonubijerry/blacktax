@@ -213,4 +213,6 @@ next-env.d.ts
 
 # wrangler files
 .wrangler
-.dev.vars*
+
+generated
+.local_db
